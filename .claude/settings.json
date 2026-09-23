@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "includeCoAuthoredBy": false,
+  "_comment": "No golangci-lint entry, deliberately: linting happens in the pre-commit hook and in CI, never from a hand-started run. See AGENTS.md.",
+  "permissions": {
+    "allow": [
+      "Bash(make:*)",
+      "Bash(go build:*)",
+      "Bash(go test:*)",
+      "Bash(go vet:*)",
+      "Bash(go run:*)",
+      "Bash(gofmt:*)"
+    ]
+  }
+}
