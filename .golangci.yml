@@ -112,7 +112,7 @@ linters:
 
       # --- Relaxed for adoption (extended-set rollout) — path-scoped so the
       # linters stay live for new code. Burn-down:
-      # https://github.com/blairham/tuikit/issues/34 ---
+      # https://github.com/blairham/tuikit/issues/1 ---
       - path: chrome/commandbar.go
         linters: [errname, goconst]
       - path: chrome/prompt.go
