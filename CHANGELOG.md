@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-10-01
+
 ### Added
 
 - In the command bar, `→` at the end of the input accepts the inline
