@@ -151,10 +151,29 @@ func (r *Router) Breadcrumb() []chrome.Crumb {
 	return out
 }
 
-// TranslateNavKey rewrites the j/k/g/G/ctrl+d/ctrl+u keymap onto the
-// arrow/page keys that bubbles tables understand natively. Apps that
+// The modified keys TranslateNavKey maps, as tea.KeyMsg.String spells them.
+const (
+	navPageDownVim = "ctrl+d"
+	navPageUpVim   = "ctrl+u"
+	navPageDownK9s = "ctrl+f"
+	navPageUpK9s   = "ctrl+b"
+)
+
+// TranslateNavKey rewrites the vim-style navigation keys onto the
+// arrow/page keys that bubbles tables and viewports understand natively:
+//
+//	j / k            ↓ / ↑
+//	h / l            ← / →
+//	g / G            home / end
+//	ctrl+f / ctrl+b  pgdown / pgup  (k9s's page keys)
+//	ctrl+d / ctrl+u  pgdown / pgup
+//
+// The arrow, page and home/end keys themselves pass through untouched, so
+// both spellings work; [chrome.NavigationHelp] lists only the vim ones. Apps that
 // strip j/k from the table keymap (via [tuikit/table.KeyMap]) call this
-// before feeding the message into the active view's table.Update.
+// before feeding the message into the active view's table.Update — and
+// after their own view keys, so a view that binds one of these letters
+// (`l` for logs, say) still receives it.
 func TranslateNavKey(msg tea.KeyMsg) tea.Msg {
 	switch msg.String() {
 	case "j":
@@ -165,9 +184,13 @@ func TranslateNavKey(msg tea.KeyMsg) tea.Msg {
 		return tea.KeyPressMsg{Code: tea.KeyHome}
 	case "G":
 		return tea.KeyPressMsg{Code: tea.KeyEnd}
-	case "ctrl+d":
+	case "h":
+		return tea.KeyPressMsg{Code: tea.KeyLeft}
+	case "l":
+		return tea.KeyPressMsg{Code: tea.KeyRight}
+	case navPageDownVim, navPageDownK9s:
 		return tea.KeyPressMsg{Code: tea.KeyPgDown}
-	case "ctrl+u":
+	case navPageUpVim, navPageUpK9s:
 		return tea.KeyPressMsg{Code: tea.KeyPgUp}
 	}
 	return msg
