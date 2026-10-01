@@ -16,6 +16,16 @@ import (
 // styles in [Theme] are pre-built to honor PaintBackground; if you
 // build your own styles, use [Theme.On] so they follow the same rule.
 //
+// The pre-built styles are computed from the color fields when the
+// theme is constructed. Assigning a color field (or PaintBackground)
+// afterwards does not reach them on its own — call [Theme.Rebuild]
+// once you are done adjusting fields:
+//
+//	t := theme.Default()
+//	t.Logo = lipgloss.Color("#2496ED")
+//	t.Accent = lipgloss.Color("#2496ED")
+//	t.Rebuild() // LogoStyle and Title now use the new colors
+//
 //nolint:govet // field order favors readability over fieldalignment in this public API struct
 type Theme struct {
 	// Bg is the canvas color. With PaintBackground=true it's applied to
@@ -27,7 +37,9 @@ type Theme struct {
 	Border color.Color
 
 	// Foreground accents. Apps recolor any of these when constructing
-	// a custom theme.
+	// a custom theme. Changing one after [Default] or
+	// [NoPaintBackground] requires [Theme.Rebuild] for the pre-built
+	// styles below to pick it up.
 	Accent       color.Color // primary highlight (cyan in Default)
 	AccentAlt    color.Color // secondary highlight (fuchsia in Default)
 	AccentBold   color.Color // bold/numeric highlight (papaya whip in Default)
@@ -50,7 +62,9 @@ type Theme struct {
 	// Status colors.
 	Status StatusColors
 
-	// Pre-built styles. All honor PaintBackground.
+	// Pre-built styles. All honor PaintBackground. They are derived
+	// from the color fields above at construction time and by
+	// [Theme.Rebuild]; Rebuild overwrites any style assigned by hand.
 	InfoLabel    lipgloss.Style
 	InfoValue    lipgloss.Style
 	ShortcutKey  lipgloss.Style // action keys (everything that isn't a view-switch digit)
@@ -136,6 +150,20 @@ func NoPaintBackground() Theme {
 	t.PaintBackground = false
 	t.populateStyles()
 	return t
+}
+
+// Rebuild recomputes every pre-built style (InfoLabel, LogoStyle,
+// Title, TableBorder, …) from the theme's current color fields and its
+// current PaintBackground setting. Call it after changing any color on
+// a theme returned by [Default] or [NoPaintBackground]; without it the
+// pre-built styles keep the colors they were constructed with.
+//
+// Rebuild preserves the theme's background mode: a theme from
+// [NoPaintBackground] stays unpainted, a theme from [Default] stays
+// painted. Styles assigned by hand are overwritten, so override
+// individual styles after calling Rebuild, not before.
+func (t *Theme) Rebuild() {
+	t.populateStyles()
 }
 
 // populateStyles fills in the pre-built styles based on the color

@@ -3,6 +3,8 @@ package theme
 import (
 	"strings"
 	"testing"
+
+	"charm.land/lipgloss/v2"
 )
 
 func TestDefault_PaintsBackground(t *testing.T) {
@@ -63,5 +65,66 @@ func TestOn_AppliesForeground(t *testing.T) {
 	rendered := theme.On(theme.Accent).Render("test")
 	if !strings.Contains(rendered, "38;") {
 		t.Errorf("expected foreground ANSI in %q", rendered)
+	}
+}
+
+// dockerBlueSGR is the truecolor foreground sequence lipgloss emits for
+// #2496ED (36, 150, 237).
+const dockerBlueSGR = "38;2;36;150;237"
+
+func TestRebuild_RecolorsPrebuiltStyles(t *testing.T) {
+	t.Parallel()
+	for name, ctor := range map[string]func() Theme{
+		"Default":           Default,
+		"NoPaintBackground": NoPaintBackground,
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			th := ctor()
+			th.Logo = lipgloss.Color("#2496ED")
+			th.Accent = lipgloss.Color("#2496ED")
+
+			// The contract: assigning a field alone does not reach the
+			// pre-built styles.
+			if got := th.LogoStyle.Render("X"); strings.Contains(got, dockerBlueSGR) {
+				t.Fatalf("LogoStyle picked up the new color without Rebuild: %q", got)
+			}
+
+			th.Rebuild()
+			for style, got := range map[string]string{
+				"LogoStyle": th.LogoStyle.Render("X"),
+				"Title":     th.Title.Render("title"),
+			} {
+				if !strings.Contains(got, dockerBlueSGR) {
+					t.Errorf("%s after Rebuild = %q, want foreground %s", style, got, dockerBlueSGR)
+				}
+			}
+		})
+	}
+}
+
+func TestRebuild_PreservesBackgroundMode(t *testing.T) {
+	t.Parallel()
+
+	painted := Default()
+	painted.Logo = lipgloss.Color("#2496ED")
+	painted.Rebuild()
+	if got := painted.LogoStyle.Render("X"); !strings.Contains(got, "48;") {
+		t.Errorf("Default after Rebuild lost its background: %q", got)
+	}
+
+	bare := NoPaintBackground()
+	bare.Logo = lipgloss.Color("#2496ED")
+	bare.Rebuild()
+	if bare.PaintBackground {
+		t.Error("Rebuild flipped PaintBackground on a NoPaintBackground theme")
+	}
+	for style, got := range map[string]string{
+		"LogoStyle":   bare.LogoStyle.Render("X"),
+		"TableBorder": bare.TableBorder.Render("X"),
+	} {
+		if strings.Contains(got, "48;") {
+			t.Errorf("NoPaintBackground %s after Rebuild paints a background: %q", style, got)
+		}
 	}
 }

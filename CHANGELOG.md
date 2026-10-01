@@ -8,6 +8,13 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `theme.Theme.Rebuild()` recomputes the pre-built styles from the current
+  color fields, so a color changed after `Default()` / `NoPaintBackground()`
+  actually reaches `LogoStyle`, `Title` and the rest. It keeps the theme's
+  `PaintBackground` mode. (#7)
+
 ### Fixed
 
 - `table.Truncate` now truncates by display width (terminal cells) via

@@ -24,6 +24,25 @@ an app builds a different `Theme`; nothing else changes.
 own `Theme` and inject it; the chrome, tables, tail viewports, and loading
 screens all follow.
 
+### Recoloring a constructed theme
+
+The pre-built styles on `Theme` (`LogoStyle`, `Title`, `ShortcutKey`,
+`TableBorder`, …) are computed from the color fields when `Default()` or
+`NoPaintBackground()` builds the theme. Assigning a color field afterwards
+does **not** reach them on its own; call `Theme.Rebuild()` once the fields
+are set:
+
+```go
+t := theme.Default()
+t.Logo = lipgloss.Color("#2496ED")
+t.Accent = lipgloss.Color("#2496ED")
+t.Rebuild() // LogoStyle and Title now render in the new colors
+```
+
+`Rebuild` keeps the theme's `PaintBackground` setting, so a
+`NoPaintBackground()` theme stays unpainted. It overwrites any style
+assigned by hand, so override individual styles after calling it.
+
 ## `PaintBackground` — the load-bearing knob
 
 `Theme.PaintBackground` distinguishes the two terminal aesthetics tuikit
