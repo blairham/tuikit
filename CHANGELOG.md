@@ -8,6 +8,14 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Changed
+
+- The command and filter bars use k9s's prompt colors: the command bar's
+  border is the new `Theme.CommandBorder` (aqua) instead of `Accent`, typed
+  text is `Theme.InputText` (cadetblue) instead of `Value`, and the inline
+  suggestion is `Theme.Suggestion` (dodgerblue) instead of `Muted`. An app
+  that recolors its accent no longer recolors the command bar. (#30)
+
 ## [0.0.3] - 2026-10-01
 
 ### Added
