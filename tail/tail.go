@@ -27,6 +27,7 @@ type Model struct {
 	viewport viewport.Model
 	ready    bool
 	follow   bool
+	wrap     bool
 }
 
 // New constructs an empty tail model with follow=true.
@@ -51,6 +52,7 @@ func (m *Model) Resize(width, height int) {
 			viewport.WithWidth(width),
 			viewport.WithHeight(height),
 		)
+		m.viewport.SoftWrap = m.wrap
 		m.ready = true
 	} else {
 		m.viewport.SetWidth(width)
@@ -74,6 +76,40 @@ func (m *Model) SetFollow(on bool) {
 	if on && m.ready {
 		m.viewport.GotoBottom()
 	}
+}
+
+// Wrap reports whether long lines soft-wrap.
+func (m *Model) Wrap() bool { return m.wrap }
+
+// SetWrap soft-wraps long lines onto the following rows instead of cutting
+// them at the viewport's edge. It holds across the lazy viewport creation in
+// [Model.Resize], so it can be set before the first resize.
+func (m *Model) SetWrap(on bool) {
+	m.wrap = on
+	if m.ready {
+		m.viewport.SoftWrap = on
+		m.viewport.SetContent(strings.Join(m.visible, "\n"))
+		if m.follow {
+			m.viewport.GotoBottom()
+		}
+	}
+}
+
+// Clear empties the buffer. Lines appended afterwards fill it again, so a
+// live stream keeps going from a blank view — k9s's ctrl-k.
+func (m *Model) Clear() {
+	m.lines = m.lines[:0]
+	m.visible = m.visible[:0]
+	if m.ready {
+		m.viewport.SetContent("")
+		m.viewport.GotoTop()
+	}
+}
+
+// VisibleLines returns a copy of the filter-passing lines, as stored
+// (styling included): what the view shows, for saving or copying it.
+func (m *Model) VisibleLines() []string {
+	return append([]string(nil), m.visible...)
 }
 
 // LineCount returns the number of buffered lines (pre-filter).

@@ -119,3 +119,62 @@ func TestView_BackgroundSurvivesCombinedReset(t *testing.T) {
 		t.Errorf("background not re-asserted after combined reset \\x1b[0;32m: %q", got)
 	}
 }
+
+// TestWrap pins soft-wrap, including a wrap set before the first Resize:
+// the viewport is created lazily there and must pick the setting up.
+func TestWrap(t *testing.T) {
+	long := strings.Repeat("a", 30) + "TAIL"
+	for _, tc := range []struct {
+		name     string
+		setFirst bool
+		wrap     bool
+	}{
+		{name: "off", wrap: false},
+		{name: "on after resize", wrap: true},
+		{name: "on before resize", wrap: true, setFirst: true},
+	} {
+		m := New()
+		if tc.setFirst {
+			m.SetWrap(tc.wrap)
+		}
+		m.Resize(20, 5)
+		if !tc.setFirst {
+			m.SetWrap(tc.wrap)
+		}
+		m.AppendLine(long)
+		if got := strings.Contains(m.View(), "TAIL"); got != tc.wrap {
+			t.Errorf("%s: end of a long line visible = %v, want %v\n%s", tc.name, got, tc.wrap, m.View())
+		}
+		if m.Wrap() != tc.wrap {
+			t.Errorf("%s: Wrap() = %v", tc.name, m.Wrap())
+		}
+	}
+}
+
+func TestClearKeepsStreaming(t *testing.T) {
+	m := New()
+	m.Resize(40, 5)
+	m.AppendLines([]string{"one", "two"})
+	m.Clear()
+	if m.LineCount() != 0 || m.VisibleCount() != 0 || strings.Contains(m.View(), "two") {
+		t.Fatalf("Clear left %d lines: %q", m.LineCount(), m.View())
+	}
+	m.AppendLine("three")
+	if m.LineCount() != 1 || !strings.Contains(m.View(), "three") {
+		t.Errorf("after Clear, a new line: count %d view %q", m.LineCount(), m.View())
+	}
+}
+
+func TestVisibleLinesIsTheFilteredCopy(t *testing.T) {
+	m := New()
+	m.AppendLines([]string{"error: a", "info: b", "error: c"})
+	m.SetFilter("error")
+	got := m.VisibleLines()
+	if strings.Join(got, "|") != "error: a|error: c" {
+		t.Fatalf("VisibleLines = %q", got)
+	}
+	got[0] = "changed"
+	if m.VisibleLines()[0] != "error: a" {
+		t.Error("VisibleLines returned the buffer itself, not a copy")
+	}
+}
