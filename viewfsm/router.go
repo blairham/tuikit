@@ -169,7 +169,7 @@ const (
 //	ctrl+d / ctrl+u  pgdown / pgup
 //
 // The arrow, page and home/end keys themselves pass through untouched, so
-// both spellings work; [NavigationHelp] lists only the vim ones. Apps that
+// both spellings work; [chrome.NavigationHelp] lists only the vim ones. Apps that
 // strip j/k from the table keymap (via [tuikit/table.KeyMap]) call this
 // before feeding the message into the active view's table.Update — and
 // after their own view keys, so a view that binds one of these letters
