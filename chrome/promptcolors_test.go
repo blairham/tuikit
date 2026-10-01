@@ -41,6 +41,16 @@ func TestCommandBarUsesK9sPromptColors(t *testing.T) {
 			t.Errorf("command bar has no %s: %q", part, out)
 		}
 	}
+	// k9s writes the prompt "[::b]<typed>[suggest::-]<suggestion>": the
+	// typed text bold, the suggestion with the attributes reset.
+	bold := lipgloss.NewStyle().Foreground(th.InputText).Bold(true).Render("x")
+	if !strings.Contains(out, bold[2:strings.IndexByte(bold, 'm')]) {
+		t.Errorf("typed text is not bold cadetblue: %q", out)
+	}
+	plain := lipgloss.NewStyle().Foreground(th.Suggestion).Bold(true).Render("x")
+	if strings.Contains(out, plain[2:strings.IndexByte(plain, 'm')]) {
+		t.Errorf("suggestion is bold; k9s resets the attributes for it: %q", out)
+	}
 	if strings.Contains(out, fgSeq(th.Accent)) {
 		t.Error("command bar still draws in the app's accent color")
 	}
