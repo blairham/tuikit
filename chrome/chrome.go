@@ -305,6 +305,9 @@ func (c Chrome) Render(f Frame) string {
 		Height(f.Height)
 	if c.Theme.PaintBackground {
 		screen = screen.Background(c.Theme.Bg).Foreground(c.Theme.Value)
+		// The screen's Background only paints padding; cells after an
+		// inner span's reset fall back to the terminal default without this.
+		return theme.ReassertBackground(screen.Render(sb.String()), theme.BackgroundSeq(c.Theme.Bg))
 	}
 	return screen.Render(sb.String())
 }

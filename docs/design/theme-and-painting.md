@@ -73,9 +73,16 @@ wherever a styled block is followed by padding: every bar (filter,
 command, confirm, status), the footer, and the help overlay gate their
 `Background(...)` calls on `Theme.PaintBackground`.
 
-`tail` has the same hazard for log content: `SetBackground` re-asserts the
-theme background after the reset codes embedded in styled log lines so the
-content stays continuous.
+`tail` has the same hazard for log content, and `Chrome.Render` has it for the
+whole frame: any span an app styles with a foreground but no background ends
+in a reset. Both run `theme.ReassertBackground`, which parses every SGR and
+re-asserts the background after any that leaves it at default — a bare reset,
+a combined one such as `\x1b[0;32m`, or `49` — skipping the arguments of
+`38`/`48`/`58` extended colors so the zeros of a black color are not read as a
+reset. A reset that ends a line is left alone so the background never bleeds
+onto the next line. `table.FixSelectedRow`'s non-selected repaint uses the same
+pass. Use it rather than a `strings.ReplaceAll` on `\x1b[0m`, which misses
+combined resets.
 
 ## Rule for new styled output
 

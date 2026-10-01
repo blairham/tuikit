@@ -512,3 +512,38 @@ func TestInjectBorderTitle(t *testing.T) {
 		t.Errorf("bottom border lost during injection: %q", withTitle)
 	}
 }
+
+func TestRender_PaintsAfterInnerReset(t *testing.T) {
+	t.Parallel()
+	th := theme.Default()
+	c := New(Config{Theme: th})
+	label := lipgloss.NewStyle().Foreground(th.Label)
+	value := lipgloss.NewStyle().Foreground(th.Value)
+	info := label.Render("Context:") + value.Render("x") + " tail"
+	out := c.Render(Frame{Width: 60, Height: 12, InfoLines: []string{info}})
+	bg := theme.BackgroundSeq(th.Bg)
+
+	var row string
+	for _, l := range strings.Split(out, "\n") {
+		if strings.Contains(l, "Context:") {
+			row = l
+			break
+		}
+	}
+	if row == "" {
+		t.Fatalf("info row not found in %q", out)
+	}
+	i := strings.Index(row, "x\x1b[m")
+	if i < 0 {
+		t.Fatalf("value span reset not found in %q", row)
+	}
+	if after := row[i+len("x\x1b[m"):]; !strings.HasPrefix(after, bg) {
+		t.Errorf("background not re-asserted after the value span's reset; rest of row: %q", after)
+	}
+	// Lines must still end clean: no line may end with the bg asserted.
+	for n, l := range strings.Split(out, "\n") {
+		if strings.HasSuffix(l, bg) {
+			t.Errorf("line %d ends with the background still asserted: %q", n, l)
+		}
+	}
+}

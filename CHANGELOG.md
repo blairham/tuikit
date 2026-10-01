@@ -18,6 +18,9 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
   `Chrome` fields) set the minimum key and description column widths used by
   `Shortcut`, `ShortcutPair` and `ShortcutGrid`. Zero keeps the old 9 / 10.
   (#5)
+- `theme.ReassertBackground(s, bgSeq)` and `theme.BackgroundSeq(c)` — the
+  shared pass that re-asserts a painted canvas after every SGR that leaves the
+  background at default, and the raw escape for a color.
 
 ### Changed
 
@@ -48,6 +51,16 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 - Shortcut keys and descriptions always keep at least one space before the next
   column: a ten-character description no longer renders as `Containers<a>`,
   and a key wider than its column no longer wraps onto a second line. (#5)
+- With `PaintBackground` on, the canvas no longer drops out behind spans that
+  end in a combined reset such as systemd's `\x1b[0;32m`, or in `\x1b[49m`.
+  `tail.SetBackground` used to re-assert only after bare `\x1b[0m` / `\x1b[m`;
+  it now parses each SGR's parameters, skipping the arguments of extended
+  colors so a black `38;2;0;0;0` is not read as a reset (#8).
+- `Chrome.Render` now applies the same pass to the whole frame, so cells after
+  an app's fg-only styled span (e.g. an info-line value) stay on the canvas
+  instead of the terminal's own background. Line endings are left clean (#8).
+- `table.FixSelectedRow`'s non-selected repaint uses the same pass, so it also
+  catches combined resets.
 
 ## [0.0.0] - 2026-09-22
 
