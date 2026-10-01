@@ -3,7 +3,39 @@ package chrome
 import (
 	"strings"
 	"testing"
+
+	"charm.land/lipgloss/v2"
+
+	"github.com/blairham/tuikit/theme"
 )
+
+// TestHelpSectionHeaderIsPlainGreen pins k9s's section heading: the
+// theme's HelpSection green with no bold and no underline, and a
+// TitleColor override still winning.
+func TestHelpSectionHeaderIsPlainGreen(t *testing.T) {
+	th := theme.Default()
+	c := New(Config{Theme: th})
+	sec := HelpSection{Title: "RESOURCE", Entries: []HelpEntry{{Key: "<a>", Desc: "Attach"}}}
+
+	got := c.renderHelpSection(sec, 30)
+	if want := th.On(th.HelpSection).Render("RESOURCE"); !strings.Contains(got, want) {
+		t.Errorf("header not rendered plain in HelpSection:\nwant substring %q\ngot %q", want, got)
+	}
+	for _, styled := range []string{
+		th.On(th.HelpSection).Bold(true).Render("RESOURCE"),
+		th.On(th.HelpSection).Underline(true).Render("RESOURCE"),
+	} {
+		if strings.Contains(got, styled) {
+			t.Errorf("header carries bold/underline: %q", got)
+		}
+	}
+
+	sec.TitleColor = lipgloss.Color("#FF00FF")
+	got = c.renderHelpSection(sec, 30)
+	if want := th.On(sec.TitleColor).Render("RESOURCE"); !strings.Contains(got, want) {
+		t.Errorf("TitleColor override ignored: %q", got)
+	}
+}
 
 // TestNavigationHelpListsVimKeysOnly pins that the column advertises the
 // vim spellings and never the arrows they translate to: the arrows work

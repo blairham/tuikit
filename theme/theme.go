@@ -64,11 +64,12 @@ type Theme struct {
 	Selection     color.Color // selected row bg (e.g. light sky blue)
 	BreadcrumbBg  color.Color // pill bg for inactive breadcrumb crumbs
 
-	// Help overlay colors (k9s-style: muted-red title pill, cadet-blue
-	// description text, cyan border).
-	HelpTitle  color.Color // help overlay border-title pill text
-	HelpDesc   color.Color // help overlay description text
-	HelpBorder color.Color // help overlay outer border
+	// Help overlay colors (k9s-style: muted-red title pill, green section
+	// headers, cadet-blue description text, cyan border).
+	HelpTitle   color.Color // help overlay border-title pill text
+	HelpSection color.Color // help overlay section headers (RESOURCE, GENERAL, ...)
+	HelpDesc    color.Color // help overlay description text
+	HelpBorder  color.Color // help overlay outer border
 
 	// Status colors.
 	Status StatusColors
@@ -154,6 +155,7 @@ func Default() Theme {
 		Selection:     lipgloss.Color("#87CEFA"), // LightSkyBlue
 		BreadcrumbBg:  lipgloss.Color("#4c566a"), // DarkGray
 		HelpTitle:     lipgloss.Color("#CD5C5C"), // IndianRed (k9s help title pill)
+		HelpSection:   lipgloss.Color("#008000"), // Green (k9s help SectionColor)
 		HelpDesc:      lipgloss.Color("#5F9EA0"), // CadetBlue (k9s help description text)
 		HelpBorder:    lipgloss.Color("#00FFFF"), // Cyan (k9s help overlay border)
 		Status: StatusColors{
