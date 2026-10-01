@@ -23,7 +23,17 @@ func k9sInfo() []string {
 
 // k9sViews is nine namespace hotkeys, <0>..<8>.
 func k9sViews() []Shortcut {
-	names := []string{"all", "default", "kube-system", "monitoring", "ingress", "cert-manager", "argocd", "vault", "logging"}
+	names := []string{
+		"all",
+		"default",
+		"kube-system",
+		"monitoring",
+		"ingress",
+		"cert-manager",
+		"argocd",
+		"vault",
+		"logging",
+	}
 	out := make([]Shortcut, len(names))
 	for i, n := range names {
 		out[i] = Shortcut{Key: "<" + string(rune('0'+i)) + ">", Desc: n}
@@ -34,11 +44,20 @@ func k9sViews() []Shortcut {
 // k9sActions is fourteen pod actions.
 func k9sActions() []Shortcut {
 	return []Shortcut{
-		{"<a>", "Attach"}, {"<ctrl-d>", "Delete"}, {"<d>", "Describe"},
-		{"<e>", "Edit"}, {"<?>", "Help"}, {"<ctrl-k>", "Kill"},
-		{"<l>", "Logs"}, {"<p>", "Logs Previous"}, {"<shift-f>", "Port-Forward"},
-		{"<z>", "Sanitize"}, {"<s>", "Shell"}, {"<o>", "Show Node"},
-		{"<n>", "Show PortForward"}, {"<t>", "Trigger Cron"},
+		{"<a>", "Attach"},
+		{"<ctrl-d>", "Delete"},
+		{"<d>", "Describe"},
+		{"<e>", "Edit"},
+		{"<?>", "Help"},
+		{"<ctrl-k>", "Kill"},
+		{"<l>", "Logs"},
+		{"<p>", "Logs Previous"},
+		{"<shift-f>", "Port-Forward"},
+		{"<z>", "Sanitize"},
+		{"<s>", "Shell"},
+		{"<o>", "Show Node"},
+		{"<n>", "Show PortForward"},
+		{"<t>", "Trigger Cron"},
 	}
 }
 
