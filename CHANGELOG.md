@@ -8,6 +8,13 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `tail.Model` can soft-wrap long lines (`SetWrap` / `Wrap`, which holds
+  across the lazy viewport creation in `Resize`), empty its buffer while a
+  stream keeps appending (`Clear`), and hand back the filter-passing lines
+  for saving or copying (`VisibleLines`, a copy). (#45)
+
 ## [0.0.8] - 2026-10-01
 
 ### Fixed
