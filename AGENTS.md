@@ -8,7 +8,7 @@ A k9s-style TUI chrome toolkit for [Bubble Tea v2](https://github.com/charmbrace
 
 ## Releases and consumers
 
-**No goreleaser** — a release *is* an annotated git tag, and consumers pick it up with `go get github.com/blairham/tuikit@vX.Y.Z`. Newest tag: **v0.0.6**. Read [`.claude/commands/release-tag.md`](.claude/commands/release-tag.md) before cutting `v0.0.1`; it is the procedure (clean tree, green `make check`, monotonic tag check, CHANGELOG move out of `[Unreleased]`, confirm-before-push).
+**No goreleaser** — a release *is* an annotated git tag, and consumers pick it up with `go get github.com/blairham/tuikit@vX.Y.Z`. Newest tag: **v0.0.7**. Read [`.claude/commands/release-tag.md`](.claude/commands/release-tag.md) before cutting `v0.0.1`; it is the procedure (clean tree, green `make check`, monotonic tag check, CHANGELOG move out of `[Unreleased]`, confirm-before-push).
 
 Assume any given consumer may be several tags behind when reasoning about whether a fix has reached it — being on `main` here is not evidence that it has.
 

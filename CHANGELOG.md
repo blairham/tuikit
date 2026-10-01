@@ -8,6 +8,14 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-10-01
+
+### Changed
+
+- Help overlay section headers are plain green (`Theme.HelpSection`,
+  `#008000`), with no bold or underline, as in k9s. `HelpSection.TitleColor`
+  still overrides. (#39)
+
 ## [0.0.6] - 2026-10-01
 
 ### Added
