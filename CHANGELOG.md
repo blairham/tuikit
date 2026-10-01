@@ -21,12 +21,37 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
   top line `InjectBorderTitle` repaints now use the focus border color instead
   of `Border`, matching k9s, which draws the focused frame in light sky blue.
   Modals keep `Border`. (#18)
+- The header lays out like k9s's whether or not a logo is shown: the shortcut
+  columns start two cells after the info panel, left-aligned, and the logo is
+  pinned as a block against the right edge with flexible fill in between.
+  Logo mode used to right-align every shortcut row against the logo, leaving
+  a wide gap after the info panel, and right-justified ragged logo lines one
+  by one. A shortcut row too wide for the space before the logo is truncated
+  rather than wrapped. (#16)
+- The info panel shrinks to its widest `InfoLines` row plus the gap;
+  `InfoLabelWidth` (still 56 by default) is now the cap past which a row
+  wraps, not a fixed width. (#16)
+- `ShortcutGrid` wraps views and actions into columns of `ShortcutRows`
+  entries (capped at `TopSectionRows()`) instead of `TopSectionRows()`, so a
+  tall info panel or logo no longer makes every shortcut column taller. (#17)
+- The default `ShortcutRows` is 6 (was 5), k9s's menu height. This raises the
+  minimum `TopSectionRows()`, and so the header reservation
+  `ContentInnerSize` subtracts, from 5 to 6 rows. (#17)
+
+### Deprecated
+
+- `Config.ShortcutColumnWidth` / `Chrome.ShortcutColumnWidth` no longer affect
+  layout; the shortcut block no longer needs padding to keep the logo aligned.
+  The field is kept so existing configs compile. (#16)
 
 ### Fixed
 
 - The help overlay's title row was repainted in `Border` while its sides use
   `HelpBorder`, leaving a color seam on the top line; it now uses `HelpBorder`
   throughout. (#18)
+- The top section always renders exactly `TopSectionRows()` rows. A header
+  with fewer rows of content was drawn short, which moved the content box up a
+  row and left a blank row above the footer.
 
 ## [0.0.1] - 2026-09-30
 

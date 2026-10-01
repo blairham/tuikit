@@ -177,8 +177,8 @@ func TestRender_ShortcutRowsPastLogoAlignLeft(t *testing.T) {
 	t.Parallel()
 	const width, height = 160, 40
 	c := New(Config{Theme: theme.Default(), Logo: sixRowLogo()[:3]})
-	if c.TopSectionRows() != 5 {
-		t.Fatalf("TopSectionRows = %d; want 5", c.TopSectionRows())
+	if c.TopSectionRows() != 6 {
+		t.Fatalf("TopSectionRows = %d; want 6", c.TopSectionRows())
 	}
 	rows := []string{
 		c.ShortcutPair("<1>", "Pods", "<a>", "Attach"),

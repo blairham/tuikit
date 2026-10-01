@@ -64,12 +64,21 @@ Before this guard, a view with twelve actions on a six-row header drew a
 46-line frame on a 40-line terminal, and the content's bottom border and the
 footer were the rows that fell off (#4).
 
+The clip works in the other direction too: a header with fewer rows of
+content than `TopSectionRows()` is padded to exactly that many, so the content
+box starts directly below it rather than one row up, which left a blank row
+above the footer.
+
 Apps should not rely on the clip. `ShortcutGrid` wraps a views or actions
-list longer than `TopSectionRows()` into additional columns of at most that
-many entries (views first, then actions), the way k9s does, so the header
-stays within its reservation without losing shortcuts. To give a tall action
-list more rows instead of more columns, raise `Config.ShortcutRows`; that
-grows the reservation `ContentInnerSize` subtracts too.
+list into additional columns of `Config.ShortcutRows` entries (6 by default,
+k9s's menu height; views first, then actions), capped at `TopSectionRows()`,
+so the header stays within its reservation without losing shortcuts. The
+column height is deliberately *not* the header height: a seven-row info panel
+makes the header seven rows tall, but k9s still stops the namespace column at
+`<5>` and starts `<6>` in the next one (#17). To give a tall action list more
+rows instead of more columns, raise `Config.ShortcutRows`; that grows the
+reservation `ContentInnerSize` subtracts too. Because 6 is the floor of the
+right column, the minimum header is 6 rows.
 
 Grid columns are sized from their widest key and description plus a
 one-space gap, floored at `Config.ShortcutKeyWidth` / `ShortcutDescWidth`
@@ -77,11 +86,34 @@ one-space gap, floored at `Config.ShortcutKeyWidth` / `ShortcutDescWidth`
 gap per call, so adjacent columns never run together (#5); only
 `ShortcutGrid` can align a column across rows whose cells overflow the floor.
 
-In logo mode each shortcut row is padded to `ShortcutColumnWidth` (or the
-widest row, so a wrapped grid is not re-wrapped) and followed by its logo
-line; rows past the end of the logo get a blank segment as wide as the
-widest logo line, so they start in the same column as the rows beside the
-logo instead of right-aligning underneath it.
+## Header layout
+
+Each header row is laid out the same way with or without a logo (#16):
+
+```
+inset | info | gap | shortcut columns (left-aligned) | fill | logo | inset
+```
+
+- The info block is the 1-cell left inset, the widest `InfoLines` row, and a
+  2-cell gap, capped at `InfoLabelWidth` (56 by default; a row wider than
+  that wraps). So the first shortcut column starts right after the info
+  panel, where k9s puts it, rather than at a fixed column 56.
+- Shortcut rows are left-aligned. A row too wide to leave one blank cell
+  before the logo is truncated, never wrapped, so it can neither run into the
+  logo nor push the rows below it down.
+- The logo is pinned as a block: every line is padded to the widest, and
+  that width ends against the 1-cell right inset. Rows past the end of the
+  logo get a blank segment as wide as it. The flexible fill between the
+  shortcuts and the logo absorbs all the slack.
+
+Before #16 the logo branch right-aligned each whole row (shortcuts padded to
+`ShortcutColumnWidth`, then the logo line) against the right edge, which on a
+220-column terminal parked the first shortcut at column 103 while the info
+panel ended near column 45, and right-justified ragged logo lines one by one.
+`ShortcutColumnWidth` no longer affects layout and is kept only so existing
+configs compile.
+
+## Hiding the header and footer
 
 The footer can be hidden: `Chrome.CrumbsHidden` (flipped by
 `Chrome.ToggleCrumbs`, conventionally bound to `chrome.KeyToggleCrumbs`,

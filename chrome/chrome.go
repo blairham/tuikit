@@ -6,6 +6,7 @@ import (
 
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/blairham/tuikit/theme"
 )
@@ -18,12 +19,20 @@ type Chrome struct {
 	// Logo is the multi-line ASCII art shown in the top-right when the
 	// terminal is wide enough. Empty (or nil) disables the logo slot.
 	Logo []string
-	// InfoLabelWidth is how wide the top-left info panel is. Defaults
-	// to 56 — wide enough for "Profile: Production/AdministratorAccess"
-	// without wrapping. Apps with longer labels can grow it.
+	// InfoLabelWidth is the most the top-left info panel may take,
+	// including its 1-cell left inset. The panel shrinks to its widest
+	// [Frame.InfoLines] row plus a small gap, so the shortcut block
+	// starts right after it (k9s); a row wider than this wraps.
+	// Defaults to 56 — wide enough for
+	// "Profile: Production/AdministratorAccess" without wrapping. Apps
+	// with longer labels can grow it.
 	InfoLabelWidth int
-	// ShortcutColumnWidth is the per-row width of the shortcut grid.
-	// Defaults to 42.
+	// ShortcutColumnWidth is unused.
+	//
+	// Deprecated: the shortcut block is left-aligned after the info
+	// panel and the logo is pinned to the right edge independently, so
+	// no per-row shortcut width is needed to keep the logo aligned. The
+	// field is kept so existing configs compile.
 	ShortcutColumnWidth int
 	// MinLogoWidth hides the logo when the terminal is narrower than
 	// this. Defaults to 134 (info 56 + shortcut 42 + logo ~32 + slack).
@@ -32,9 +41,11 @@ type Chrome struct {
 	// [Chrome.TopSectionRows] to compute the top-section reservation.
 	// 0 falls back to defaultInfoPanelRows (4).
 	InfoPanelRows int
-	// ShortcutRows is how many rows the shortcut grid renders. Used
-	// alongside len(Logo) to size the right column of the top section.
-	// 0 falls back to defaultShortcutRows (5).
+	// ShortcutRows is the height of a shortcut column: [Chrome.ShortcutGrid]
+	// wraps views and actions into a new column every ShortcutRows
+	// entries, capped at [Chrome.TopSectionRows]. It also feeds
+	// TopSectionRows alongside len(Logo) and InfoPanelRows. 0 falls back
+	// to defaultShortcutRows (6, as in k9s).
 	ShortcutRows int
 	// ShortcutKeyWidth is the minimum width of a shortcut key column
 	// in [Chrome.Shortcut], [Chrome.ShortcutPair] and
@@ -107,7 +118,7 @@ type Config struct {
 
 const (
 	defaultInfoPanelRows = 4
-	defaultShortcutRows  = 5
+	defaultShortcutRows  = 6
 
 	defaultShortcutKeyWidth  = 9
 	defaultShortcutDescWidth = 10
@@ -229,7 +240,7 @@ type HelpEntry struct {
 
 // TopSectionRows returns the height (in rows) that [Chrome.renderTopSection]
 // will occupy for this Chrome's configured Logo. The right column is
-// max(len(Logo), default shortcut rows); the left is the info panel,
+// max(len(Logo), ShortcutRows, 6); the left is the info panel,
 // which apps may grow via [Config.InfoPanelRows]. The result is the max
 // of the two columns.
 func (c Chrome) TopSectionRows() int {
@@ -357,6 +368,25 @@ func (c Chrome) Render(f Frame) string {
 	return screen.Render(sb.String())
 }
 
+// infoGap is the blank space between the widest info-panel row and the
+// first shortcut column.
+const infoGap = 2
+
+// infoBlockWidth is the width of the top-left info block: the 1-cell
+// left inset, the widest info row and [infoGap], capped at
+// InfoLabelWidth (past which a row wraps, as before).
+func (c Chrome) infoBlockWidth(info []string) int {
+	w := 0
+	for _, l := range info {
+		w = max(w, lipgloss.Width(l))
+	}
+	w = 1 + w + infoGap
+	if c.InfoLabelWidth > 0 {
+		w = min(w, c.InfoLabelWidth)
+	}
+	return w
+}
+
 func (c Chrome) renderTopSection(f Frame) string {
 	// The top section must never be taller than TopSectionRows():
 	// ContentInnerSize sized the content box from that number before
@@ -367,38 +397,27 @@ func (c Chrome) renderTopSection(f Frame) string {
 	if len(shortcuts) > maxRows {
 		shortcuts = shortcuts[:maxRows]
 	}
-	rightLines := c.assembleShortcutsAndLogo(shortcuts, f.Width)
-	logoless := len(c.Logo) == 0 || f.Width < c.MinLogoWidth
 
-	leftWidth := c.InfoLabelWidth
+	leftWidth := min(c.infoBlockWidth(f.InfoLines), f.Width)
 	rightWidth := f.Width - leftWidth
-	if rightWidth < 0 {
-		rightWidth = 0
-	}
 
-	// Layout differs by mode:
+	// k9s layout, the same with or without a logo:
 	//
-	//   - logoless: left-align shortcuts to sit just right of the info
-	//     panel (k9s convention). Trailing space inside the rightWidth
-	//     block is filled with bg-painted spaces so the chrome's bg
-	//     covers the whole top row.
+	//	info | gap | shortcut columns (left-aligned) | fill | logo | inset
 	//
-	//   - logo: pin each row's right edge to the chrome's right inset
-	//     so the logo (concatenated to the row in assembleShortcutsAndLogo)
-	//     hugs the right side; shortcuts left-align inside the row at a
-	//     fixed offset from the logo via ShortcutColumnWidth.
+	// The shortcut block starts right after the info panel; the logo is
+	// pinned as a block (every line padded to the widest) against the
+	// 1-cell right inset, and the fill between them absorbs the slack.
+	// Rows past the end of the logo get a blank logo-width segment, and
+	// since shortcuts are left-aligned they line up whatever is to
+	// their right.
 	//
-	// Trailing fills are rendered through a bg-painting style. Without
-	// it, the inner styled content (LogoStyle / shortcut padder) emits a
+	// Every fill is rendered through a bg-painting style. Without it,
+	// the inner styled content (LogoStyle / shortcut styles) emits a
 	// reset escape before any raw trailing space, and the outer
 	// styledBlock's bg is not re-applied — those raw cells fall back to
 	// the terminal's default background, showing as a gray sliver
 	// against the chrome's black.
-	alignedRight := make([]string, len(rightLines))
-	contentWidth := rightWidth - 1
-	if contentWidth < 0 {
-		contentWidth = 0
-	}
 	bgSpaces := func(n int) string {
 		if n <= 0 {
 			return ""
@@ -409,38 +428,59 @@ func (c Chrome) renderTopSection(f Frame) string {
 		}
 		return s
 	}
-	trailingInset := bgSpaces(1)
-	if logoless {
-		for i, line := range rightLines {
-			fill := contentWidth - lipgloss.Width(line)
-			alignedRight[i] = line + bgSpaces(fill) + trailingInset
+	contentWidth := max(rightWidth-1, 0) // 1-cell right inset
+
+	var logo []string
+	logoWidth := 0
+	if len(c.Logo) > 0 && f.Width >= c.MinLogoWidth {
+		logo = c.Logo
+		for _, l := range logo {
+			logoWidth = max(logoWidth, lipgloss.Width(l))
 		}
-	} else {
-		for i, line := range rightLines {
-			lead := contentWidth - lipgloss.Width(line)
-			if lead < 0 {
-				lead = 0
+	}
+	// The shortcut area keeps at least one blank cell before the logo; a
+	// row too wide for it is truncated rather than wrapped, so it can
+	// neither run into the logo nor push the rows below it down.
+	shortcutWidth := contentWidth
+	if logoWidth > 0 {
+		shortcutWidth = max(contentWidth-logoWidth-1, 0)
+	}
+
+	rows := min(max(len(shortcuts), len(logo)), maxRows)
+	rightLines := make([]string, rows)
+	for i := range rows {
+		s := ""
+		if i < len(shortcuts) {
+			s = shortcuts[i]
+		}
+		if lipgloss.Width(s) > shortcutWidth {
+			s = ansi.Truncate(s, shortcutWidth, "")
+		}
+		line := s + bgSpaces(shortcutWidth-lipgloss.Width(s))
+		if logoWidth > 0 {
+			l := ""
+			if i < len(logo) {
+				l = logo[i]
 			}
-			alignedRight[i] = strings.Repeat(" ", lead) + line + trailingInset
+			line += bgSpaces(contentWidth - shortcutWidth - logoWidth)
+			if l != "" {
+				line += c.Theme.LogoStyle.Render(l)
+			}
+			line += bgSpaces(logoWidth - lipgloss.Width(l))
 		}
+		rightLines[i] = line + bgSpaces(1)
 	}
 
 	// 1-char inset on each side keeps InfoLines and Shortcuts off the
 	// chrome's left/right edges symmetrically, matching the footer's
 	// leading-space convention.
-	leftBlock := c.styledBlock(leftWidth, 0).PaddingLeft(1).Render(strings.Join(f.InfoLines, "\n"))
-	rightInner := strings.Join(alignedRight, "\n")
-
-	// Compute heights from the actual wrapped renders — if the info
-	// panel wraps (long label/value), both blocks grow to match so
-	// JoinHorizontal doesn't pad the shorter block with a stray bg row.
-	height := lipgloss.Height(leftBlock)
-	if h := lipgloss.Height(rightInner); h > height {
-		height = h
-	}
-	height = min(height, maxRows)
-
-	leftBlock = c.styledBlock(leftWidth, height).MaxHeight(height).PaddingLeft(1).Render(strings.Join(f.InfoLines, "\n"))
+	// Both blocks are exactly TopSectionRows() tall: a wrapped info row
+	// or extra shortcut rows are clipped, and a header with fewer rows of
+	// content is padded, so the content box ContentInnerSize sized always
+	// starts directly below the header and ends directly above the footer.
+	height := maxRows
+	rightInner := strings.Join(rightLines, "\n")
+	leftBlock := c.styledBlock(leftWidth, height).MaxHeight(height).PaddingLeft(1).Render(strings.Join(f.InfoLines, "\n"))
 	rightBlock := c.styledBlock(rightWidth, height).MaxHeight(height).Render(rightInner)
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftBlock, rightBlock) + "\n"
@@ -458,57 +498,6 @@ func (c Chrome) styledBlock(width, height int) lipgloss.Style {
 		s = s.Background(c.Theme.Bg)
 	}
 	return s
-}
-
-func (c Chrome) assembleShortcutsAndLogo(shortcuts []string, width int) []string {
-	if len(c.Logo) == 0 || width < c.MinLogoWidth {
-		// Logoless: return rows at natural width. Padding to
-		// ShortcutColumnWidth here would add trailing whitespace that
-		// the per-line right-align in renderTopSection treats as
-		// visible width, pushing the last char off the chrome edge.
-		// renderTopSection right-aligns these rows directly.
-		out := make([]string, len(shortcuts))
-		copy(out, shortcuts)
-		return out
-	}
-
-	// Logo branch: pad each shortcut row to ShortcutColumnWidth (or
-	// the widest row, so a wrapped multi-column grid is never re-wrapped
-	// by the padder) so the logo column starts at a stable offset
-	// across rows.
-	colWidth := c.ShortcutColumnWidth
-	for _, s := range shortcuts {
-		colWidth = max(colWidth, lipgloss.Width(s))
-	}
-	padder := lipgloss.NewStyle().Width(colWidth)
-	if c.Theme.PaintBackground {
-		padder = padder.Background(c.Theme.Bg)
-	}
-	// Rows past the logo get a blank logo-width segment so they are as
-	// wide as the rows above. Without it renderTopSection's per-row
-	// right-align pushes them to the right edge, under the logo.
-	logoWidth := 0
-	for _, l := range c.Logo {
-		logoWidth = max(logoWidth, lipgloss.Width(l))
-	}
-
-	rows := len(c.Logo)
-	if len(shortcuts) > rows {
-		rows = len(shortcuts)
-	}
-	out := make([]string, rows)
-	for i := 0; i < rows; i++ {
-		s := ""
-		if i < len(shortcuts) {
-			s = shortcuts[i]
-		}
-		logo := strings.Repeat(" ", logoWidth)
-		if i < len(c.Logo) {
-			logo = c.Logo[i]
-		}
-		out[i] = padder.Render(s) + c.Theme.LogoStyle.Render(logo)
-	}
-	return out
 }
 
 // Shortcut formats a single key/description pair (e.g. "<enter>",
@@ -558,10 +547,11 @@ type Shortcut struct {
 // consumers register views and per-view actions once and let the
 // chrome render the grid.
 //
-// The grid is never taller than [Chrome.TopSectionRows]: a list longer
-// than that wraps into additional columns of at most TopSectionRows
-// entries (views first, then actions), so the header never outgrows
-// the reservation [Chrome.ContentInnerSize] made for it. Otherwise the
+// Columns are [Chrome.ShortcutRows] tall (6 by default, as in k9s): a
+// list longer than that wraps into additional columns of at most that
+// many entries (views first, then actions). The column height is capped
+// at [Chrome.TopSectionRows], so the header never outgrows the
+// reservation [Chrome.ContentInnerSize] made for it. Otherwise the
 // row count is max(len(views), len(actions)), and when one column has
 // fewer entries the missing cells render as empty (width-padded)
 // pairs so column alignment is preserved.
@@ -578,7 +568,11 @@ func (c Chrome) ShortcutGrid(views, actions []Shortcut) []string {
 	if len(views) == 0 && len(actions) == 0 {
 		return nil
 	}
-	maxRows := c.TopSectionRows()
+	maxRows := c.ShortcutRows
+	if maxRows <= 0 {
+		maxRows = defaultShortcutRows
+	}
+	maxRows = min(maxRows, c.TopSectionRows())
 	cols := append(chunkShortcuts(views, maxRows), chunkShortcuts(actions, maxRows)...)
 
 	rows := 0

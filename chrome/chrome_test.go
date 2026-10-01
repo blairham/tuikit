@@ -50,8 +50,8 @@ func TestNew_HonorsCustomConfig(t *testing.T) {
 
 func TestContentInnerSize(t *testing.T) {
 	t.Parallel()
-	// Default chrome: no logo, default rows. Top = max(4 info, 5 shortcut) = 5.
-	// Reserved = 5 + 2 + 2 = 9 (footer reserves a row of bottom padding so
+	// Default chrome: no logo, default rows. Top = max(4 info, 6 shortcut) = 6.
+	// Reserved = 6 + 2 + 2 = 10 (footer reserves a row of bottom padding so
 	// the breadcrumb pill mirrors the bordered content's left/right margin).
 	c := New(Config{})
 	cases := []struct {
@@ -60,12 +60,12 @@ func TestContentInnerSize(t *testing.T) {
 		flt, cmd, cnf, stat bool
 		wantW, wantH        int
 	}{
-		{"basic", 150, 40, false, false, false, false, 146, 31},
-		{"with filter", 150, 40, true, false, false, false, 146, 28},
-		{"with confirm", 150, 40, false, false, true, false, 146, 28},
-		{"all bars", 150, 40, true, true, true, true, 146, 21},
+		{"basic", 150, 40, false, false, false, false, 146, 30},
+		{"with filter", 150, 40, true, false, false, false, 146, 27},
+		{"with confirm", 150, 40, false, false, true, false, 146, 27},
+		{"all bars", 150, 40, true, true, true, true, 146, 20},
 		{"floor at 1", 150, 5, false, false, false, false, 146, 1},
-		{"width floor", 8, 40, false, false, false, false, 10, 31},
+		{"width floor", 8, 40, false, false, false, false, 10, 30},
 	}
 	for _, tc := range cases {
 		gotW, gotH := c.ContentInnerSize(tc.w, tc.h, tc.flt, tc.cmd, tc.cnf, tc.stat)
@@ -83,8 +83,8 @@ func TestTopSectionRows(t *testing.T) {
 		cfg  Config
 		want int
 	}{
-		{"defaults: max(4 info, 5 shortcut) = 5", Config{}, 5},
-		{"5-row logo matches default shortcut count", Config{Logo: lines(5)}, 5},
+		{"defaults: max(4 info, 6 shortcut) = 6", Config{}, 6},
+		{"6-row logo matches default shortcut count", Config{Logo: lines(6)}, 6},
 		{"9-row logo dominates the right column", Config{Logo: lines(9)}, 9},
 		{"tall info panel dominates", Config{InfoPanelRows: 8}, 8},
 		{"explicit shortcut row count beats logo + info", Config{ShortcutRows: 7, Logo: lines(3)}, 7},
@@ -280,9 +280,10 @@ func TestRenderTopSection_LogolessShortcutsLeftAligned(t *testing.T) {
 		t.Errorf("InfoLines row 0: want 1-col left inset before non-space; got %q", got[:min(20, len(got))])
 	}
 
-	// Shortcut rows occupy rows[len(InfoLines):]. Every row's first
-	// visible col must match — left-aligned inside the right block.
-	shortcutRows := rows[len(frame.InfoLines):]
+	// Shortcut rows occupy rows[len(InfoLines):len(Shortcuts)]. Every
+	// row's first visible col must match — left-aligned inside the right
+	// block.
+	shortcutRows := rows[len(frame.InfoLines):len(frame.Shortcuts)]
 	wantFirstCol := -1
 	for i, row := range shortcutRows {
 		firstVisCol := firstVisibleCol(row)
@@ -300,13 +301,14 @@ func TestRenderTopSection_LogolessShortcutsLeftAligned(t *testing.T) {
 		}
 	}
 
-	// Shortcuts sit at the info-panel boundary, NOT at the right edge.
-	// Expected start col = InfoLabelWidth (the left block's width).
-	if wantFirstCol != c.InfoLabelWidth {
+	// Shortcuts sit at the info-panel boundary, NOT at the right edge:
+	// the left block is the 1-col inset, the widest info line and the
+	// info gap.
+	if want := 1 + len("Context: production-us") + infoGap; wantFirstCol != want {
 		t.Errorf(
 			"shortcut start col = %d; want %d (immediately right of info panel)",
 			wantFirstCol,
-			c.InfoLabelWidth,
+			want,
 		)
 	}
 
@@ -578,7 +580,7 @@ func TestRender_CrumbsHiddenContentReachesBottom(t *testing.T) {
 			f := Frame{
 				Width:      w,
 				Height:     h,
-				Shortcuts:  []string{"a", "b", "c", "d", "e"}, // fill the 5-row top reservation
+				Shortcuts:  []string{"a", "b", "c", "d", "e"}, // more than the info panel
 				Content:    c.BorderedContent("body", w, innerH),
 				StatusBar:  status,
 				Breadcrumb: []Crumb{{Label: "Crumbzz", Leaf: true}},
