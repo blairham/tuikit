@@ -760,7 +760,7 @@ func (c Chrome) renderCommandBar(input *textinput.Model, width int) string {
 	box := lipgloss.NewStyle().
 		Width(width).
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(c.Theme.Accent).
+		BorderForeground(c.Theme.CommandBorder).
 		Padding(0, 1)
 	if c.Theme.PaintBackground {
 		box = box.Background(c.Theme.Bg)

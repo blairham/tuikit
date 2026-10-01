@@ -215,8 +215,8 @@ func commandBarStyles(s textinput.Styles, t theme.Theme) textinput.Styles {
 		bg = bg.Background(t.Bg)
 	}
 	s.Focused.Prompt = bg.Foreground(t.Logo).Bold(true)
-	s.Focused.Text = bg.Foreground(t.Value)
+	s.Focused.Text = bg.Foreground(t.InputText)
 	s.Focused.Placeholder = bg.Foreground(t.Muted)
-	s.Focused.Suggestion = bg.Foreground(t.Muted)
+	s.Focused.Suggestion = bg.Foreground(t.Suggestion)
 	return s
 }

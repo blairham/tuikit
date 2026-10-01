@@ -47,18 +47,22 @@ type Theme struct {
 	// a custom theme. Changing one after [Default] or
 	// [NoPaintBackground] requires [Theme.Rebuild] for the pre-built
 	// styles below to pick it up.
-	Accent       color.Color // primary highlight (cyan in Default)
-	AccentAlt    color.Color // secondary highlight (fuchsia in Default)
-	AccentBold   color.Color // bold/numeric highlight (papaya whip in Default)
-	Logo         color.Color // ASCII logo color
-	Label        color.Color // info-panel label color
-	Value        color.Color // info-panel value color
-	Muted        color.Color // dim/separator text
-	Prompt       color.Color // prompt-pill background
-	PromptText   color.Color // prompt-pill foreground (typically Bg)
-	Filter       color.Color // filter prompt color
-	Selection    color.Color // selected row bg (e.g. light sky blue)
-	BreadcrumbBg color.Color // pill bg for inactive breadcrumb crumbs
+	Accent     color.Color // primary highlight (cyan in Default)
+	AccentAlt  color.Color // secondary highlight (fuchsia in Default)
+	AccentBold color.Color // bold/numeric highlight (papaya whip in Default)
+	Logo       color.Color // ASCII logo color
+	Label      color.Color // info-panel label color
+	Value      color.Color // info-panel value color
+	Muted      color.Color // dim/separator text
+	Prompt     color.Color // prompt-pill background
+	PromptText color.Color // prompt-pill foreground (typically Bg)
+	Filter     color.Color // filter prompt color
+	// Command and filter bars, in k9s's prompt colors.
+	CommandBorder color.Color // command-bar border (k9s: aqua)
+	InputText     color.Color // text typed into the command and filter bars (k9s: cadetblue)
+	Suggestion    color.Color // inline completion after the typed text (k9s: dodgerblue)
+	Selection     color.Color // selected row bg (e.g. light sky blue)
+	BreadcrumbBg  color.Color // pill bg for inactive breadcrumb crumbs
 
 	// Help overlay colors (k9s-style: muted-red title pill, cadet-blue
 	// description text, cyan border).
@@ -131,24 +135,27 @@ func (t Theme) FocusBorder() color.Color {
 // This is the default look.
 func Default() Theme {
 	t := Theme{
-		Bg:           lipgloss.Color("#000000"),
-		Border:       lipgloss.Color("#1E90FF"), // DodgerBlue
-		BorderFocus:  lipgloss.Color("#87CEFA"), // LightSkyBlue (k9s frame focusColor)
-		Accent:       lipgloss.Color("#00FFFF"), // Aqua / Cyan
-		AccentAlt:    lipgloss.Color("#FF00FF"), // Fuchsia
-		AccentBold:   lipgloss.Color("#FFEFD5"), // PapayaWhip
-		Logo:         lipgloss.Color("#FFA500"), // Orange
-		Label:        lipgloss.Color("#FFA500"), // Orange
-		Value:        lipgloss.Color("#FFFFFF"), // White
-		Muted:        lipgloss.Color("#808080"), // Gray
-		Prompt:       lipgloss.Color("#FFA500"), // Orange (bg of prompt pill)
-		PromptText:   lipgloss.Color("#000000"), // Bg (fg of prompt pill)
-		Filter:       lipgloss.Color("#2E8B57"), // SeaGreen (k9s-style)
-		Selection:    lipgloss.Color("#87CEFA"), // LightSkyBlue
-		BreadcrumbBg: lipgloss.Color("#4c566a"), // DarkGray
-		HelpTitle:    lipgloss.Color("#CD5C5C"), // IndianRed (k9s help title pill)
-		HelpDesc:     lipgloss.Color("#5F9EA0"), // CadetBlue (k9s help description text)
-		HelpBorder:   lipgloss.Color("#00FFFF"), // Cyan (k9s help overlay border)
+		Bg:            lipgloss.Color("#000000"),
+		Border:        lipgloss.Color("#1E90FF"), // DodgerBlue
+		BorderFocus:   lipgloss.Color("#87CEFA"), // LightSkyBlue (k9s frame focusColor)
+		Accent:        lipgloss.Color("#00FFFF"), // Aqua / Cyan
+		AccentAlt:     lipgloss.Color("#FF00FF"), // Fuchsia
+		AccentBold:    lipgloss.Color("#FFEFD5"), // PapayaWhip
+		Logo:          lipgloss.Color("#FFA500"), // Orange
+		Label:         lipgloss.Color("#FFA500"), // Orange
+		Value:         lipgloss.Color("#FFFFFF"), // White
+		Muted:         lipgloss.Color("#808080"), // Gray
+		Prompt:        lipgloss.Color("#FFA500"), // Orange (bg of prompt pill)
+		PromptText:    lipgloss.Color("#000000"), // Bg (fg of prompt pill)
+		Filter:        lipgloss.Color("#2E8B57"), // SeaGreen (k9s-style)
+		CommandBorder: lipgloss.Color("#00FFFF"), // Aqua (k9s prompt border, command mode)
+		InputText:     lipgloss.Color("#5F9EA0"), // CadetBlue (k9s prompt text)
+		Suggestion:    lipgloss.Color("#1E90FF"), // DodgerBlue (k9s prompt suggestion)
+		Selection:     lipgloss.Color("#87CEFA"), // LightSkyBlue
+		BreadcrumbBg:  lipgloss.Color("#4c566a"), // DarkGray
+		HelpTitle:     lipgloss.Color("#CD5C5C"), // IndianRed (k9s help title pill)
+		HelpDesc:      lipgloss.Color("#5F9EA0"), // CadetBlue (k9s help description text)
+		HelpBorder:    lipgloss.Color("#00FFFF"), // Cyan (k9s help overlay border)
 		Status: StatusColors{
 			OK:    lipgloss.Color("#008000"), // Green
 			Warn:  lipgloss.Color("#FFFF00"), // Yellow
