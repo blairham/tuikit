@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.9] - 2026-10-01
+
 ### Added
 
 - `tail.Model` can soft-wrap long lines (`SetWrap` / `Wrap`, which holds
