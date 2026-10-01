@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-10-01
+
 ### Added
 
 - `viewfsm.TranslateNavKey` maps `h`/`l` to `←`/`→` and `ctrl+f`/`ctrl+b` to
