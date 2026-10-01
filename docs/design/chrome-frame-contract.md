@@ -54,6 +54,35 @@ short). `Chrome.Render` then stacks the same elements in the same order,
 gating each one's background on `Theme.PaintBackground` (see
 [`theme-and-painting.md`](theme-and-painting.md)).
 
+## The top section never outgrows its reservation
+
+`ContentInnerSize` runs before the frame exists, so it cannot see how many
+rows the app will put in `Frame.Shortcuts` or `Frame.InfoLines`; it trusts
+`TopSectionRows()`. `Render` keeps that trust honest: the top section is
+clipped to `TopSectionRows()` rows, and shortcut rows past it are dropped.
+Before this guard, a view with twelve actions on a six-row header drew a
+46-line frame on a 40-line terminal, and the content's bottom border and the
+footer were the rows that fell off (#4).
+
+Apps should not rely on the clip. `ShortcutGrid` wraps a views or actions
+list longer than `TopSectionRows()` into additional columns of at most that
+many entries (views first, then actions), the way k9s does, so the header
+stays within its reservation without losing shortcuts. To give a tall action
+list more rows instead of more columns, raise `Config.ShortcutRows`; that
+grows the reservation `ContentInnerSize` subtracts too.
+
+Grid columns are sized from their widest key and description plus a
+one-space gap, floored at `Config.ShortcutKeyWidth` / `ShortcutDescWidth`
+(9 / 10 by default). `Shortcut` and `ShortcutPair` apply the same floor and
+gap per call, so adjacent columns never run together (#5); only
+`ShortcutGrid` can align a column across rows whose cells overflow the floor.
+
+In logo mode each shortcut row is padded to `ShortcutColumnWidth` (or the
+widest row, so a wrapped grid is not re-wrapped) and followed by its logo
+line; rows past the end of the logo get a blank segment as wide as the
+widest logo line, so they start in the same column as the rows beside the
+logo instead of right-aligning underneath it.
+
 ## Command / filter bar lifecycle
 
 `chrome.CommandBar` owns the `:` palette as a standalone widget: it holds

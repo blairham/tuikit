@@ -14,6 +14,17 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
   color fields, so a color changed after `Default()` / `NoPaintBackground()`
   actually reaches `LogoStyle`, `Title` and the rest. It keeps the theme's
   `PaintBackground` mode. (#7)
+- `chrome.Config.ShortcutKeyWidth` / `ShortcutDescWidth` (and the matching
+  `Chrome` fields) set the minimum key and description column widths used by
+  `Shortcut`, `ShortcutPair` and `ShortcutGrid`. Zero keeps the old 9 / 10.
+  (#5)
+
+### Changed
+
+- `ShortcutGrid` wraps a views or actions list longer than `TopSectionRows()`
+  into additional columns (k9s behavior), so a grid is never taller than the
+  header's reservation, and sizes each column from its widest key and
+  description. (#4, #5)
 
 ### Fixed
 
@@ -27,6 +38,16 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
   bubbles' `↑/k`/`↓/j`; `k`/`j` are deliberately unbound there (apps route
   them through `viewfsm.TranslateNavKey`), so the help was advertising keys
   that do nothing. The doc comment now says so explicitly. (#9)
+- The top section never renders more than `TopSectionRows()` rows: extra
+  `Frame.Shortcuts` rows and overflowing `InfoLines` are clipped, so the frame
+  no longer outgrows the terminal and pushes the content's bottom border and
+  the footer off-screen. (#4)
+- In logo mode, shortcut rows past the end of the logo are padded with a blank
+  logo-width segment and align with the rows above instead of right-aligning
+  under the logo. (#4)
+- Shortcut keys and descriptions always keep at least one space before the next
+  column: a ten-character description no longer renders as `Containers<a>`,
+  and a key wider than its column no longer wraps onto a second line. (#5)
 
 ## [0.0.0] - 2026-09-22
 

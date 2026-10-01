@@ -36,6 +36,18 @@ type Chrome struct {
 	// alongside len(Logo) to size the right column of the top section.
 	// 0 falls back to defaultShortcutRows (5).
 	ShortcutRows int
+	// ShortcutKeyWidth is the minimum width of a shortcut key column
+	// in [Chrome.Shortcut], [Chrome.ShortcutPair] and
+	// [Chrome.ShortcutGrid]. A key at least this wide grows its column
+	// so one space always separates it from its description. 0 falls
+	// back to defaultShortcutKeyWidth (9).
+	ShortcutKeyWidth int
+	// ShortcutDescWidth is the minimum width of a padded shortcut
+	// description column (every description except the last on a row).
+	// A description at least this wide grows its column so one space
+	// always separates it from the next key. 0 falls back to
+	// defaultShortcutDescWidth (10).
+	ShortcutDescWidth int
 }
 
 // Config carries the fields apps actually customize. Anything zero
@@ -48,11 +60,16 @@ type Config struct {
 	MinLogoWidth        int
 	InfoPanelRows       int
 	ShortcutRows        int
+	ShortcutKeyWidth    int
+	ShortcutDescWidth   int
 }
 
 const (
 	defaultInfoPanelRows = 4
 	defaultShortcutRows  = 5
+
+	defaultShortcutKeyWidth  = 9
+	defaultShortcutDescWidth = 10
 )
 
 // New returns a [Chrome] with defaults filled in. Pass an empty Config
@@ -79,6 +96,8 @@ func New(cfg Config) Chrome {
 		MinLogoWidth:        cfg.MinLogoWidth,
 		InfoPanelRows:       cfg.InfoPanelRows,
 		ShortcutRows:        cfg.ShortcutRows,
+		ShortcutKeyWidth:    cfg.ShortcutKeyWidth,
+		ShortcutDescWidth:   cfg.ShortcutDescWidth,
 	}
 }
 
@@ -86,8 +105,12 @@ func New(cfg Config) Chrome {
 // they want rendered, the chrome handles layout.
 //
 // InfoLines is the rendered top-left key/value rows.
-// Shortcuts is up to 5 rows of pre-rendered shortcut text (use
-// [Chrome.Shortcut] / [Chrome.ShortcutPair] to format them).
+// Shortcuts is up to [Chrome.TopSectionRows] rows of pre-rendered
+// shortcut text (use [Chrome.ShortcutGrid], which wraps into extra
+// columns to stay within that, or [Chrome.Shortcut] /
+// [Chrome.ShortcutPair]). Rows past TopSectionRows are not drawn, so
+// the frame never outgrows the reservation [Chrome.ContentInnerSize]
+// made for it.
 // Content is the rendered body (typically a bordered table from
 // [Chrome.BorderedContent] + [InjectBorderTitle]).
 // Breadcrumb is the drill-stack labels, leaf last.
@@ -287,7 +310,16 @@ func (c Chrome) Render(f Frame) string {
 }
 
 func (c Chrome) renderTopSection(f Frame) string {
-	rightLines := c.assembleShortcutsAndLogo(f.Shortcuts, f.Width)
+	// The top section must never be taller than TopSectionRows():
+	// ContentInnerSize sized the content box from that number before
+	// this frame existed, so every row drawn past it pushes the
+	// content's bottom border and the footer off the terminal.
+	maxRows := c.TopSectionRows()
+	shortcuts := f.Shortcuts
+	if len(shortcuts) > maxRows {
+		shortcuts = shortcuts[:maxRows]
+	}
+	rightLines := c.assembleShortcutsAndLogo(shortcuts, f.Width)
 	logoless := len(c.Logo) == 0 || f.Width < c.MinLogoWidth
 
 	leftWidth := c.InfoLabelWidth
@@ -358,9 +390,10 @@ func (c Chrome) renderTopSection(f Frame) string {
 	if h := lipgloss.Height(rightInner); h > height {
 		height = h
 	}
+	height = min(height, maxRows)
 
-	leftBlock = c.styledBlock(leftWidth, height).PaddingLeft(1).Render(strings.Join(f.InfoLines, "\n"))
-	rightBlock := c.styledBlock(rightWidth, height).Render(rightInner)
+	leftBlock = c.styledBlock(leftWidth, height).MaxHeight(height).PaddingLeft(1).Render(strings.Join(f.InfoLines, "\n"))
+	rightBlock := c.styledBlock(rightWidth, height).MaxHeight(height).Render(rightInner)
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftBlock, rightBlock) + "\n"
 }
@@ -391,11 +424,24 @@ func (c Chrome) assembleShortcutsAndLogo(shortcuts []string, width int) []string
 		return out
 	}
 
-	// Logo branch: pad each shortcut row to ShortcutColumnWidth so the
-	// logo column starts at a stable offset across rows.
-	padder := lipgloss.NewStyle().Width(c.ShortcutColumnWidth)
+	// Logo branch: pad each shortcut row to ShortcutColumnWidth (or
+	// the widest row, so a wrapped multi-column grid is never re-wrapped
+	// by the padder) so the logo column starts at a stable offset
+	// across rows.
+	colWidth := c.ShortcutColumnWidth
+	for _, s := range shortcuts {
+		colWidth = max(colWidth, lipgloss.Width(s))
+	}
+	padder := lipgloss.NewStyle().Width(colWidth)
 	if c.Theme.PaintBackground {
 		padder = padder.Background(c.Theme.Bg)
+	}
+	// Rows past the logo get a blank logo-width segment so they are as
+	// wide as the rows above. Without it renderTopSection's per-row
+	// right-align pushes them to the right edge, under the logo.
+	logoWidth := 0
+	for _, l := range c.Logo {
+		logoWidth = max(logoWidth, lipgloss.Width(l))
 	}
 
 	rows := len(c.Logo)
@@ -408,7 +454,7 @@ func (c Chrome) assembleShortcutsAndLogo(shortcuts []string, width int) []string
 		if i < len(shortcuts) {
 			s = shortcuts[i]
 		}
-		logo := ""
+		logo := strings.Repeat(" ", logoWidth)
 		if i < len(c.Logo) {
 			logo = c.Logo[i]
 		}
@@ -419,8 +465,9 @@ func (c Chrome) assembleShortcutsAndLogo(shortcuts []string, width int) []string
 
 // Shortcut formats a single key/description pair (e.g. "<enter>",
 // "Tail") for use in [Frame.Shortcuts]. Only the key is padded to a
-// fixed column; the description is left at its natural width so the
-// row has no trailing whitespace inside the styled region.
+// column of [Chrome.ShortcutKeyWidth] (grown so at least one space
+// follows the key); the description is left at its natural width so
+// the row has no trailing whitespace inside the styled region.
 //
 // k9s distinguishes two classes of hotkey: "view" keys of the form
 // "<N>" (digits, used to switch the active resource view) and "action"
@@ -431,22 +478,21 @@ func (c Chrome) assembleShortcutsAndLogo(shortcuts []string, width int) []string
 //
 // Most rows render two pairs; use [Chrome.ShortcutPair] for that.
 func (c Chrome) Shortcut(key, desc string) string {
-	return c.keyStyle(key).Render(lipgloss.NewStyle().Width(9).Render(key)) +
-		c.Theme.ShortcutDesc.Render(desc)
+	return c.shortcutCell(Shortcut{Key: key, Desc: desc}, c.shortcutKeyWidth(key), 0)
 }
 
 // ShortcutPair formats two key/description pairs onto one row. The
-// first description is padded to a fixed column so the second key
-// lines up vertically across rows; the second description is rendered
-// at natural width so the row ends on visible text. Each key picks its
-// color independently via [Chrome.keyStyle].
+// first description is padded to [Chrome.ShortcutDescWidth] so the
+// second key lines up vertically across rows; the second description
+// is rendered at natural width so the row ends on visible text. A key
+// or description too wide for its column grows the column, so at
+// least one space always separates adjacent columns (alignment across
+// rows then holds only for rows whose cells fit — use
+// [Chrome.ShortcutGrid] to size columns from all rows at once). Each
+// key picks its color independently via [Chrome.keyStyle].
 func (c Chrome) ShortcutPair(k1, d1, k2, d2 string) string {
-	kStyle := lipgloss.NewStyle().Width(9)
-	dStyle := lipgloss.NewStyle().Width(10)
-	return c.keyStyle(k1).Render(kStyle.Render(k1)) +
-		c.Theme.ShortcutDesc.Render(dStyle.Render(d1)) +
-		c.keyStyle(k2).Render(kStyle.Render(k2)) +
-		c.Theme.ShortcutDesc.Render(d2)
+	return c.shortcutCell(Shortcut{Key: k1, Desc: d1}, c.shortcutKeyWidth(k1), c.shortcutDescWidth(d1)) +
+		c.shortcutCell(Shortcut{Key: k2, Desc: d2}, c.shortcutKeyWidth(k2), 0)
 }
 
 // Shortcut is a key + description pair for the registered-shortcut
@@ -460,31 +506,115 @@ type Shortcut struct {
 
 // ShortcutGrid lays out registered shortcuts k9s-style: view-switch
 // hotkeys stack vertically in the leftmost column, actions stack in
-// the second column. Returns rows ready for [Frame.Shortcuts] —
+// the column(s) after it. Returns rows ready for [Frame.Shortcuts] —
 // consumers register views and per-view actions once and let the
 // chrome render the grid.
 //
-// Row count = max(len(views), len(actions)). When one column has
+// The grid is never taller than [Chrome.TopSectionRows]: a list longer
+// than that wraps into additional columns of at most TopSectionRows
+// entries (views first, then actions), so the header never outgrows
+// the reservation [Chrome.ContentInnerSize] made for it. Otherwise the
+// row count is max(len(views), len(actions)), and when one column has
 // fewer entries the missing cells render as empty (width-padded)
 // pairs so column alignment is preserved.
+//
+// Each column is as wide as its widest key and description plus a
+// one-space gap, but never narrower than [Chrome.ShortcutKeyWidth] /
+// [Chrome.ShortcutDescWidth], so columns line up across rows and never
+// run together.
 //
 // Coloring is automatic: view-shaped keys (<N>) pick up
 // [Theme.ShortcutView], actions pick up [Theme.ShortcutKey] — see
 // [Chrome.keyStyle].
 func (c Chrome) ShortcutGrid(views, actions []Shortcut) []string {
-	rows := max(len(views), len(actions))
+	if len(views) == 0 && len(actions) == 0 {
+		return nil
+	}
+	maxRows := c.TopSectionRows()
+	cols := append(chunkShortcuts(views, maxRows), chunkShortcuts(actions, maxRows)...)
+
+	rows := 0
+	keyW := make([]int, len(cols))
+	descW := make([]int, len(cols))
+	for i, col := range cols {
+		rows = max(rows, len(col))
+		keyW[i] = c.shortcutKeyWidth("")
+		descW[i] = c.shortcutDescWidth("")
+		for _, s := range col {
+			keyW[i] = max(keyW[i], c.shortcutKeyWidth(s.Key))
+			descW[i] = max(descW[i], c.shortcutDescWidth(s.Desc))
+		}
+	}
+
 	out := make([]string, rows)
-	for i := range rows {
-		var v, a Shortcut
-		if i < len(views) {
-			v = views[i]
+	for r := range rows {
+		// Drop trailing empty cells so a row ends on visible text.
+		last := len(cols) - 1
+		for last > 0 && r >= len(cols[last]) {
+			last--
 		}
-		if i < len(actions) {
-			a = actions[i]
+		var sb strings.Builder
+		for i := 0; i <= last; i++ {
+			var s Shortcut
+			if r < len(cols[i]) {
+				s = cols[i][r]
+			}
+			dw := descW[i]
+			if i == last {
+				dw = 0
+			}
+			sb.WriteString(c.shortcutCell(s, keyW[i], dw))
 		}
-		out[i] = c.ShortcutPair(v.Key, v.Desc, a.Key, a.Desc)
+		out[r] = sb.String()
 	}
 	return out
+}
+
+// chunkShortcuts splits list into columns of at most n entries. An
+// empty list still yields one (empty) column so a grid with no views
+// keeps its action column in the same place.
+func chunkShortcuts(list []Shortcut, n int) [][]Shortcut {
+	if len(list) == 0 {
+		return [][]Shortcut{nil}
+	}
+	n = max(n, 1)
+	var out [][]Shortcut
+	for len(list) > n {
+		out = append(out, list[:n])
+		list = list[n:]
+	}
+	return append(out, list)
+}
+
+// shortcutCell renders one key/description pair with the key padded to
+// keyWidth and the description padded to descWidth (0 = natural width).
+func (c Chrome) shortcutCell(s Shortcut, keyWidth, descWidth int) string {
+	desc := s.Desc
+	if descWidth > 0 {
+		desc = padRight(desc, descWidth)
+	}
+	return c.keyStyle(s.Key).Render(padRight(s.Key, keyWidth)) + c.Theme.ShortcutDesc.Render(desc)
+}
+
+// shortcutKeyWidth is the key column width that fits key with at least
+// one space after it, floored at the configured ShortcutKeyWidth.
+func (c Chrome) shortcutKeyWidth(key string) int {
+	w := c.ShortcutKeyWidth
+	if w <= 0 {
+		w = defaultShortcutKeyWidth
+	}
+	return max(w, lipgloss.Width(key)+1)
+}
+
+// shortcutDescWidth is the padded description column width that fits
+// desc with at least one space after it, floored at the configured
+// ShortcutDescWidth.
+func (c Chrome) shortcutDescWidth(desc string) int {
+	w := c.ShortcutDescWidth
+	if w <= 0 {
+		w = defaultShortcutDescWidth
+	}
+	return max(w, lipgloss.Width(desc)+1)
 }
 
 // keyStyle picks the foreground style for a shortcut key based on
@@ -727,8 +857,9 @@ func (c Chrome) renderHelpSection(s HelpSection, colWidth int) string {
 }
 
 func padRight(s string, w int) string {
-	if len(s) >= w {
+	n := lipgloss.Width(s)
+	if n >= w {
 		return s
 	}
-	return s + strings.Repeat(" ", w-len(s))
+	return s + strings.Repeat(" ", w-n)
 }
