@@ -8,6 +8,12 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- In the command bar, `→` at the end of the input accepts the inline
+  suggestion, like `tab` — as in k9s. Mid-text it still moves the cursor,
+  and with no suggestion it does nothing new. (#36)
+
 ## [0.0.5] - 2026-10-01
 
 ### Fixed
