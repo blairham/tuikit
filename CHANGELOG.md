@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-10-01
+
 ### Fixed
 
 - The text typed into the command and filter bars is bold, as in k9s's
