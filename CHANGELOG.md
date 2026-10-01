@@ -19,6 +19,13 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 - `chrome.GeneralHelp()` and `chrome.NavigationHelp()`: the help overlay's
   GENERAL and NAVIGATION columns in k9s's wording, listing the vim keys and
   not the arrows they translate to. Apps append their own entries. (#22)
+- `viewfsm.History`: the visited-view trail behind k9s's `[` back, `]`
+  forward and `-` last view, with browser semantics (a visit after going back
+  drops the forward entries, repeats collapse, bounded by
+  `DefaultHistorySize`). Standalone, so apps with their own view stack can
+  use it. `Router.JumpTo` records into the router's own history, and
+  `Router.HistoryBack`, `HistoryForward` and `LastView` jump through it
+  without re-recording. (#23)
 
 ## [0.0.2] - 2026-10-01
 

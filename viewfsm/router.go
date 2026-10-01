@@ -36,6 +36,7 @@ type Spec struct {
 type Router struct {
 	specs   map[ViewID]Spec
 	hotkeys map[string]ViewID
+	history *History
 	stack   []ViewID
 }
 
@@ -49,9 +50,12 @@ func NewRouter(specs map[ViewID]Spec, initial ViewID) *Router {
 			hotkeys[s.Hotkey] = id
 		}
 	}
+	history := NewHistory(0)
+	history.Visit(initial)
 	return &Router{
 		specs:   specs,
 		hotkeys: hotkeys,
+		history: history,
 		stack:   []ViewID{initial},
 	}
 }
@@ -112,14 +116,35 @@ func (r *Router) Replace(id ViewID) {
 	r.stack[len(r.stack)-1] = id
 }
 
-// JumpTo resets the stack to a single entry — the given view. Use this
-// when a digit hotkey should also reset the drill depth — the usual
-// shape for a shallow stack.
+// JumpTo resets the stack to a single entry — the given view — and records
+// it in the router's [History]. Use this when a digit hotkey should also
+// reset the drill depth — the usual shape for a shallow stack.
 func (r *Router) JumpTo(id ViewID) {
 	if _, ok := r.specs[id]; !ok {
 		return
 	}
 	r.stack = []ViewID{id}
+	r.history.Visit(id)
+}
+
+// HistoryBack jumps to the previously visited view without recording the
+// move, for k9s's `[`. It reports false, and changes
+// nothing, at the oldest entry.
+func (r *Router) HistoryBack() (ViewID, bool) { return r.jumpUnrecorded(r.history.Back()) }
+
+// HistoryForward undoes a [Router.HistoryBack], for k9s's `]`.
+func (r *Router) HistoryForward() (ViewID, bool) { return r.jumpUnrecorded(r.history.Forward()) }
+
+// LastView returns to the view before the current one, for k9s's `-`;
+// called twice it toggles between the two.
+func (r *Router) LastView() (ViewID, bool) { return r.jumpUnrecorded(r.history.Last()) }
+
+func (r *Router) jumpUnrecorded(id ViewID, ok bool) (ViewID, bool) {
+	if !ok {
+		return 0, false
+	}
+	r.stack = []ViewID{id}
+	return id, true
 }
 
 // ResolveHotkey returns the view ID bound to the given digit key, if
