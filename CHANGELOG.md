@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-10-01
+
 ### Fixed
 
 - Help overlay entries no longer wrap: each section's key column is as wide
