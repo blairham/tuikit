@@ -98,10 +98,5 @@ func paintCellBackgrounds(line string) string {
 	if !strings.Contains(line, "\x1b[") {
 		return line
 	}
-	reapply := "\x1b[m\x1b[" + blackBgMarker + "m"
-	line = resetRe.ReplaceAllString(line, reapply)
-	if idx := strings.LastIndex(line, reapply); idx >= 0 {
-		line = line[:idx] + "\x1b[m"
-	}
-	return line
+	return theme.ReassertBackground(line, "\x1b["+blackBgMarker+"m")
 }

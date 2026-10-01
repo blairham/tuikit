@@ -6,9 +6,9 @@ import (
 
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 
 	"github.com/blairham/tuikit/table"
+	"github.com/blairham/tuikit/theme"
 )
 
 // Model wraps a bubbles viewport with a line buffer, a follow toggle,
@@ -35,18 +35,13 @@ func New() *Model {
 }
 
 // SetBackground makes [Model.View] paint the given background continuously
-// behind the content. Formatted log lines contain reset codes (\x1b[m) that
-// clear the background mid-line, so a surrounding width+background style only
+// behind the content. Formatted log lines contain resets (\x1b[m, and combined
+// forms like \x1b[0;32m) that clear the background mid-line, so a surrounding width+background style only
 // fills the leading/trailing padding and leaves the text on the terminal's own
 // background. View re-asserts the background after each reset to close those
 // gaps. Pass the theme's Bg.
 func (m *Model) SetBackground(c color.Color) {
-	// Derive the raw background SGR from lipgloss so it honors the active color
-	// profile (truecolor / 256 / none) instead of hardcoding an escape.
-	sample := lipgloss.NewStyle().Background(c).Render(" ")
-	if i := strings.IndexByte(sample, 'm'); strings.HasPrefix(sample, "\x1b[") && i > 0 {
-		m.bgSeq = sample[:i+1]
-	}
+	m.bgSeq = theme.BackgroundSeq(c)
 }
 
 // Resize updates the underlying viewport dimensions.
@@ -246,7 +241,7 @@ func (m *Model) HandleScrollKey(key string) bool {
 // View renders the viewport. Returns an empty string if Resize() has
 // not been called yet — callers should fall back to a placeholder. When a
 // background is set (see [Model.SetBackground]) the rendered content has the
-// background re-asserted after every reset code so it stays continuous behind
+// background re-asserted after every SGR that resets it so it stays continuous behind
 // styled log lines.
 func (m *Model) View() string {
 	if !m.ready {
@@ -254,21 +249,9 @@ func (m *Model) View() string {
 	}
 	out := m.viewport.View()
 	if m.bgSeq != "" {
-		out = fillBackground(out, m.bgSeq)
+		out = theme.ReassertBackground(out, m.bgSeq)
 	}
 	return out
-}
-
-// fillBackground re-asserts the background SGR immediately after every reset in
-// s. lipgloss does not restore a surrounding background after the resets that
-// terminate inner styled spans, so without this the text between/after styled
-// tokens falls back to the terminal's own background. The leading and trailing
-// padding are handled by the caller's width+background wrapper (e.g. the
-// bordered content box).
-func fillBackground(s, bgSeq string) string {
-	s = strings.ReplaceAll(s, "\x1b[0m", "\x1b[0m"+bgSeq)
-	s = strings.ReplaceAll(s, "\x1b[m", "\x1b[m"+bgSeq)
-	return s
 }
 
 func (m *Model) rebuildVisible() {

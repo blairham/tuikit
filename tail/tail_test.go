@@ -1,6 +1,13 @@
 package tail
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+	"charm.land/lipgloss/v2"
+
+	"github.com/blairham/tuikit/theme"
+)
 
 func TestNew_FollowDefaultsOn(t *testing.T) {
 	t.Parallel()
@@ -97,5 +104,18 @@ func TestView_NotReadyReturnsEmpty(t *testing.T) {
 	m := New()
 	if m.View() != "" {
 		t.Error("View before Resize should return empty string")
+	}
+}
+
+func TestView_BackgroundSurvivesCombinedReset(t *testing.T) {
+	t.Parallel()
+	m := New()
+	m.SetBackground(lipgloss.Color("#000000"))
+	m.Resize(40, 1)
+	m.AppendLine("[\x1b[0;32m  OK  \x1b[0m] Started")
+	bg := theme.BackgroundSeq(lipgloss.Color("#000000"))
+	got := m.View()
+	if !strings.Contains(got, "\x1b[0;32m"+bg+"  OK  ") {
+		t.Errorf("background not re-asserted after combined reset \\x1b[0;32m: %q", got)
 	}
 }
