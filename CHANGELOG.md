@@ -21,6 +21,14 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 - `theme.ReassertBackground(s, bgSeq)` and `theme.BackgroundSeq(c)` — the
   shared pass that re-asserts a painted canvas after every SGR that leaves the
   background at default, and the raw escape for a color.
+- `chrome.Chrome.HeaderHidden` / `CrumbsHidden` hide the top section and the
+  breadcrumb footer (k9s's headless / crumbsless modes). `Render` omits the
+  hidden part and `ContentInnerSize` releases its reservation, so the bordered
+  content grows into the freed rows. `ToggleHeader` / `ToggleCrumbs` flip them;
+  `chrome.KeyToggleHeader` (`ctrl+e`) and `chrome.KeyToggleCrumbs` (`ctrl+g`)
+  are the conventional bindings, matched by the app in its own `Update`. The
+  `commandbar` example wires both up and now sizes its content through
+  `ContentInnerSize`. (#6)
 
 ### Changed
 

@@ -48,6 +48,47 @@ type Chrome struct {
 	// always separates it from the next key. 0 falls back to
 	// defaultShortcutDescWidth (10).
 	ShortcutDescWidth int
+	// CrumbsHidden drops the breadcrumb footer entirely: [Chrome.Render]
+	// skips it and [Chrome.ContentInnerSize] releases its 2-row
+	// reservation, so the bordered content grows to fill the space.
+	// Apps flip it with [Chrome.ToggleCrumbs], conventionally bound to
+	// [KeyToggleCrumbs] (ctrl+g, as in k9s).
+	CrumbsHidden bool
+	// HeaderHidden drops the top section (info panel, shortcuts, logo)
+	// entirely: [Chrome.Render] skips it and [Chrome.ContentInnerSize]
+	// releases its TopSectionRows() reservation, so the bordered content
+	// grows into the freed rows. Apps flip it with [Chrome.ToggleHeader],
+	// conventionally bound to [KeyToggleHeader] (ctrl+e, as in k9s).
+	HeaderHidden bool
+}
+
+// ToggleHeader shows or hides the top section. See [Chrome.HeaderHidden].
+func (c *Chrome) ToggleHeader() {
+	c.HeaderHidden = !c.HeaderHidden
+}
+
+// headerRows is the reservation for the top section, or nothing at all
+// when the header is hidden.
+func (c Chrome) headerRows() int {
+	if c.HeaderHidden {
+		return 0
+	}
+	return c.TopSectionRows()
+}
+
+// ToggleCrumbs shows or hides the breadcrumb footer. See
+// [Chrome.CrumbsHidden].
+func (c *Chrome) ToggleCrumbs() {
+	c.CrumbsHidden = !c.CrumbsHidden
+}
+
+// footerRows is the reservation for the breadcrumb footer: the pill row
+// plus a bottom gap, or nothing at all when the crumbs are hidden.
+func (c Chrome) footerRows() int {
+	if c.CrumbsHidden {
+		return 0
+	}
+	return 2
 }
 
 // Config carries the fields apps actually customize. Anything zero
@@ -220,15 +261,15 @@ func (c Chrome) TopSectionRows() int {
 //
 // Reservations:
 //
-//	top section (info + shortcuts):  TopSectionRows()
+//	top section (info + shortcuts):  TopSectionRows(), 0 when HeaderHidden
 //	bordered content frame:           2 rows
-//	footer (breadcrumb + bottom gap): 2 rows
+//	footer (breadcrumb + bottom gap): 2 rows, 0 when CrumbsHidden
 //	filter bar:                       3 rows when active
 //	command bar:                      3 rows when active
 //	confirm bar:                      3 rows when active
 //	status bar:                       1 row when active
 func (c Chrome) ContentInnerSize(w, h int, filtering, commanding, confirming, statusBar bool) (innerW, innerH int) {
-	reserved := c.TopSectionRows() + 2 + 2
+	reserved := c.headerRows() + 2 + c.footerRows()
 	innerH = h - reserved
 	if filtering {
 		innerH -= 3
@@ -271,7 +312,9 @@ func (c Chrome) Render(f Frame) string {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(c.renderTopSection(f))
+	if !c.HeaderHidden {
+		sb.WriteString(c.renderTopSection(f))
+	}
 	if f.Filter != nil {
 		sb.WriteString(c.renderFilterBar(f.Filter, f.Width))
 		sb.WriteString("\n")
@@ -293,12 +336,14 @@ func (c Chrome) Render(f Frame) string {
 	default:
 		sb.WriteString(f.Content)
 	}
-	sb.WriteString("\n")
 	if f.StatusBar != "" {
-		sb.WriteString(c.renderStatusBar(f.StatusBar, f.StatusBarLevel, f.Width))
 		sb.WriteString("\n")
+		sb.WriteString(c.renderStatusBar(f.StatusBar, f.StatusBarLevel, f.Width))
 	}
-	sb.WriteString(c.renderFooter(f.Breadcrumb, f.Width))
+	if !c.CrumbsHidden {
+		sb.WriteString("\n")
+		sb.WriteString(c.renderFooter(f.Breadcrumb, f.Width))
+	}
 
 	screen := lipgloss.NewStyle().
 		Width(f.Width).

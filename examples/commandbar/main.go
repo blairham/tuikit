@@ -52,6 +52,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case ":":
 			return m, m.bar.Open()
+		case chrome.KeyToggleCrumbs:
+			m.chrome.ToggleCrumbs()
+			return m, nil
+		case chrome.KeyToggleHeader:
+			m.chrome.ToggleHeader()
+			return m, nil
 		}
 	}
 	if m.bar.Active() {
@@ -79,19 +85,22 @@ func (m model) View() tea.View {
 	if m.w == 0 || m.h == 0 {
 		return tea.View{}
 	}
+	err := m.bar.Error()
+	_, innerH := m.chrome.ContentInnerSize(m.w, m.h, false, m.bar.Active(), false, err != "")
 	f := chrome.Frame{
-		Width:      m.w,
-		Height:     m.h,
-		InfoLines:  []string{"CommandBar example", "Press : to open"},
-		Shortcuts:  []string{m.chrome.ShortcutPair("<:>", "Command", "<q>", "Quit")},
-		Content:    m.chrome.BorderedContent(centeredBody(m.last, m.w), m.w-2, m.h-12),
+		Width:     m.w,
+		Height:    m.h,
+		InfoLines: []string{"CommandBar example", "Press : to open"},
+		Shortcuts: []string{
+			m.chrome.ShortcutPair("<:>", "Command", "<q>", "Quit"),
+			m.chrome.ShortcutPair("<ctrl-e>", "Header", "<ctrl-g>", "Crumbs"),
+		},
+		Content:    m.chrome.BorderedContent(centeredBody(m.last, m.w), m.w-2, innerH),
 		Breadcrumb: []chrome.Crumb{{Label: "example", Leaf: true}},
+		StatusBar:  err,
 	}
 	if m.bar.Active() {
 		f.Command = m.bar.Input()
-	}
-	if err := m.bar.Error(); err != "" {
-		f.StatusBar = err
 	}
 	return tea.NewView(m.chrome.Render(f))
 }
