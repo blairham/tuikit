@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.1] - 2026-09-30
+
 ### Added
 
 - `theme.Theme.Rebuild()` recomputes the pre-built styles from the current

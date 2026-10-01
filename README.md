@@ -93,7 +93,7 @@ and `chrome.KeyToggleCrumbs`, ctrl+g. Likewise the top section's
 ## Releases
 
 This repo has **no goreleaser** — a release *is* a git tag, and consumers pick
-it up with `go get github.com/blairham/tuikit@vX.Y.Z`. Newest tag: **v0.0.0**.
+it up with `go get github.com/blairham/tuikit@vX.Y.Z`. Newest tag: **v0.0.1**.
 Read [`.claude/commands/release-tag.md`](.claude/commands/release-tag.md) for
 the procedure before cutting `v0.0.1` — it covers the clean-tree and green-check
 gates, the CHANGELOG move out of `[Unreleased]`, and the confirm-before-push
