@@ -8,6 +8,16 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- **`chrome`** — hideable breadcrumb footer. `Chrome.ToggleCrumbs()` flips
+  `Chrome.CrumbsHidden`; while set, `Render` omits the footer and
+  `ContentInnerSize` releases its 2-row reservation so the bordered content
+  grows to fill it. `chrome.KeyToggleCrumbs` (`"ctrl+g"`, as in k9s) is the
+  conventional binding; the app matches it in its own `Update`. The
+  `commandbar` example wires it up and now sizes its content through
+  `ContentInnerSize`.
+
 ## [0.0.0] - 2026-09-22
 
 Initial release: six composable packages under one module, all rooted on

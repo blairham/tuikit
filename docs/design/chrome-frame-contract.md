@@ -39,7 +39,7 @@ reservation for every element the chrome will stack around the content:
 ```
 top section (info + shortcuts):  TopSectionRows()
 bordered content frame:           2 rows
-footer (breadcrumb + bottom gap): 2 rows
+footer (breadcrumb + bottom gap): 2 rows, 0 when Chrome.CrumbsHidden
 filter bar:                       3 rows when active
 command bar:                      3 rows when active
 confirm bar:                      3 rows when active
@@ -53,6 +53,16 @@ the bottom of the terminal (content too tall) or leaves a gap (too
 short). `Chrome.Render` then stacks the same elements in the same order,
 gating each one's background on `Theme.PaintBackground` (see
 [`theme-and-painting.md`](theme-and-painting.md)).
+
+The footer can be hidden: `Chrome.CrumbsHidden` (flipped by
+`Chrome.ToggleCrumbs`, conventionally bound to `chrome.KeyToggleCrumbs`,
+ctrl+g as in k9s) makes `Render` skip the breadcrumb footer and
+`ContentInnerSize` release its 2 rows, so the bordered content grows to the
+bottom of the terminal. The chrome does not own the key loop — the app
+matches the key and calls `ToggleCrumbs` on the `Chrome` it keeps in its
+model. Because the reservation lives on `Chrome`, an app that sizes its
+content through `ContentInnerSize` (rather than a hardcoded height) picks
+up the resize for free.
 
 ## Command / filter bar lifecycle
 

@@ -6,6 +6,7 @@ import (
 
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/blairham/tuikit/theme"
 )
@@ -510,5 +511,64 @@ func TestInjectBorderTitle(t *testing.T) {
 	// Should still have the bottom-row border characters.
 	if !strings.Contains(withTitle, "╰") || !strings.Contains(withTitle, "╯") {
 		t.Errorf("bottom border lost during injection: %q", withTitle)
+	}
+}
+
+func TestToggleCrumbs_ReleasesFooterReservation(t *testing.T) {
+	t.Parallel()
+	c := New(Config{})
+	_, shown := c.ContentInnerSize(150, 40, false, false, false, false)
+	c.ToggleCrumbs()
+	if !c.CrumbsHidden {
+		t.Fatal("ToggleCrumbs did not hide the crumbs")
+	}
+	_, hidden := c.ContentInnerSize(150, 40, false, false, false, false)
+	if hidden != shown+2 {
+		t.Errorf("hidden innerH = %d; want %d (shown %d + 2 footer rows)", hidden, shown+2, shown)
+	}
+	c.ToggleCrumbs()
+	if _, back := c.ContentInnerSize(150, 40, false, false, false, false); back != shown {
+		t.Errorf("toggled back innerH = %d; want %d", back, shown)
+	}
+}
+
+func TestRender_CrumbsHiddenContentReachesBottom(t *testing.T) {
+	t.Parallel()
+	for _, status := range []string{"", "boom"} {
+		for _, hide := range []bool{false, true} {
+			c := New(Config{})
+			c.CrumbsHidden = hide
+			const w, h = 120, 30
+			_, innerH := c.ContentInnerSize(w, h, false, false, false, status != "")
+			f := Frame{
+				Width:      w,
+				Height:     h,
+				Shortcuts:  []string{"a", "b", "c", "d", "e"}, // fill the 5-row top reservation
+				Content:    c.BorderedContent("body", w, innerH),
+				StatusBar:  status,
+				Breadcrumb: []Crumb{{Label: "Crumbzz", Leaf: true}},
+			}
+			lines := strings.Split(ansi.Strip(c.Render(f)), "\n")
+			if len(lines) != h {
+				t.Fatalf("hide=%v status=%q: %d lines; want %d", hide, status, len(lines), h)
+			}
+			out := strings.Join(lines, "\n")
+			if got := strings.Contains(out, "Crumbzz"); got == hide {
+				t.Errorf("hide=%v status=%q: crumb present = %v", hide, status, got)
+			}
+			// The content's bottom border sits directly above whatever
+			// follows it: the status bar, the 2-row footer, or nothing.
+			below := 0
+			if status != "" {
+				below++
+			}
+			if !hide {
+				below += 2
+			}
+			if row := lines[h-1-below]; !strings.Contains(row, "╰") {
+				t.Errorf("hide=%v status=%q: row %d = %q; want the content's bottom border",
+					hide, status, h-1-below, row)
+			}
+		}
 	}
 }
