@@ -128,3 +128,55 @@ func TestRebuild_PreservesBackgroundMode(t *testing.T) {
 		}
 	}
 }
+
+// lightSkyBlueSGR and dodgerBlueSGR are the truecolor foreground
+// sequences for #87CEFA (k9s's frame focusColor) and #1E90FF.
+const (
+	lightSkyBlueSGR = "38;2;135;206;250"
+	dodgerBlueSGR   = "38;2;30;144;255"
+)
+
+func TestDefault_TableBorderIsFocusColor(t *testing.T) {
+	t.Parallel()
+	for name, ctor := range map[string]func() Theme{
+		"Default":           Default,
+		"NoPaintBackground": NoPaintBackground,
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			got := ctor().TableBorder.Render("X")
+			if !strings.Contains(got, lightSkyBlueSGR) {
+				t.Errorf("TableBorder = %q, want border foreground %s", got, lightSkyBlueSGR)
+			}
+			if strings.Contains(got, dodgerBlueSGR) {
+				t.Errorf("TableBorder = %q still carries the unfocused %s", got, dodgerBlueSGR)
+			}
+		})
+	}
+}
+
+func TestFocusBorder_NilFallsBackToBorder(t *testing.T) {
+	t.Parallel()
+	th := Theme{Border: lipgloss.Color("#1E90FF")}
+	if th.FocusBorder() != th.Border {
+		t.Errorf("FocusBorder() = %v, want Border %v when BorderFocus is nil", th.FocusBorder(), th.Border)
+	}
+	th.Rebuild()
+	got := th.TableBorder.Render("X")
+	if !strings.Contains(got, dodgerBlueSGR) {
+		t.Errorf("TableBorder with nil BorderFocus = %q, want Border foreground %s", got, dodgerBlueSGR)
+	}
+}
+
+func TestRebuild_PicksUpBorderFocus(t *testing.T) {
+	t.Parallel()
+	th := Default()
+	th.BorderFocus = lipgloss.Color("#2496ED")
+	if got := th.TableBorder.Render("X"); strings.Contains(got, dockerBlueSGR) {
+		t.Fatalf("TableBorder picked up BorderFocus without Rebuild: %q", got)
+	}
+	th.Rebuild()
+	if got := th.TableBorder.Render("X"); !strings.Contains(got, dockerBlueSGR) {
+		t.Errorf("TableBorder after Rebuild = %q, want foreground %s", got, dockerBlueSGR)
+	}
+}

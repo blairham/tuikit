@@ -1,6 +1,7 @@
 package chrome
 
 import (
+	"image/color"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -18,11 +19,21 @@ import (
 //
 // The title can carry its own ANSI styling (typical: theme.Title +
 // theme.AccentAlt for the bracketed sub-label). The border characters
-// are repainted in theme.Border foreground.
+// are repainted in the focused-border color ([theme.Theme.FocusBorder]),
+// matching [theme.Theme.TableBorder] — this is the main content box's
+// title. A box drawn in another color (a modal, the help overlay, a
+// secondary pane) uses [InjectBorderTitleColor] with that color, so the
+// top line does not change color where it meets the side borders.
 //
 // If the input box has no top line (single-line input), the function
 // returns it unchanged.
 func InjectBorderTitle(box, title string, t theme.Theme) string {
+	return InjectBorderTitleColor(box, title, t.FocusBorder(), t)
+}
+
+// InjectBorderTitleColor is [InjectBorderTitle] with the repainted top
+// line drawn in border. Pass the same color the box's side borders use.
+func InjectBorderTitleColor(box, title string, border color.Color, t theme.Theme) string {
 	lines := strings.SplitN(box, "\n", 2)
 	if len(lines) < 1 {
 		return box
@@ -40,7 +51,7 @@ func InjectBorderTitle(box, title string, t theme.Theme) string {
 		rightPad = 1
 	}
 
-	borderStyle := lipgloss.NewStyle().Foreground(t.Border)
+	borderStyle := lipgloss.NewStyle().Foreground(border)
 	spacerStyle := lipgloss.NewStyle()
 	if t.PaintBackground {
 		borderStyle = borderStyle.Background(t.Bg)

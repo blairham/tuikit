@@ -202,7 +202,7 @@ func (c Chrome) renderModalOverlay(m *Modal, areaW, areaH int) string {
 	}
 	rendered := box.Render(content)
 
-	rendered = InjectBorderTitle(rendered, c.Theme.Title.Render(m.title), c.Theme)
+	rendered = InjectBorderTitleColor(rendered, c.Theme.Title.Render(m.title), c.Theme.Border, c.Theme)
 
 	canvas := lipgloss.NewStyle().Width(areaW).Height(areaH).Align(lipgloss.Center, lipgloss.Center)
 	if c.Theme.PaintBackground {
