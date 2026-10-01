@@ -18,3 +18,23 @@ const KeyToggleCrumbs = "ctrl+g"
 // (k9s uses ctrl+e). Like [KeyToggleCrumbs], apps match it in their own
 // Update and call ToggleHeader.
 const KeyToggleHeader = "ctrl+e"
+
+// Conventional bindings for the general shortcuts every k9s-style app
+// shares. Like [KeyToggleCrumbs], these are names, not behavior: the chrome
+// does not own the key loop, so apps match them in their own Update. They
+// are what [GeneralHelp] and [NavigationHelp] advertise.
+const (
+	// KeyBack leaves the current view, like esc without clearing a filter.
+	KeyBack = "q"
+	// KeyReload refetches the active view.
+	KeyReload = "ctrl+r"
+	// KeyHistoryBack and KeyHistoryForward walk the visited-view history.
+	KeyHistoryBack    = "["
+	KeyHistoryForward = "]"
+	// KeyLastView returns to the previously used view; pressed again, it
+	// toggles back.
+	KeyLastView = "-"
+	// KeyFieldNext and KeyFieldPrev move between fields of a form.
+	KeyFieldNext = "tab"
+	KeyFieldPrev = "shift+tab"
+)

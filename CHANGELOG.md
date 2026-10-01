@@ -8,6 +8,18 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `viewfsm.TranslateNavKey` maps `h`/`l` to `←`/`→` and `ctrl+f`/`ctrl+b` to
+  `pgdown`/`pgup` (k9s's page keys), beside the existing `j`/`k`/`g`/`G`/
+  `ctrl+d`/`ctrl+u`. The arrow and page keys keep working unchanged. (#22)
+- Conventional key constants in `chrome`: `KeyBack` (`q`), `KeyReload`
+  (`ctrl+r`), `KeyHistoryBack`/`KeyHistoryForward` (`[`/`]`), `KeyLastView`
+  (`-`), `KeyFieldNext`/`KeyFieldPrev` (`tab`/`shift+tab`). (#22)
+- `chrome.GeneralHelp()` and `chrome.NavigationHelp()`: the help overlay's
+  GENERAL and NAVIGATION columns in k9s's wording, listing the vim keys and
+  not the arrows they translate to. Apps append their own entries. (#22)
+
 ## [0.0.2] - 2026-10-01
 
 ### Added
