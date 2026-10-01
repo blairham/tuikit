@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-10-01
+
 ### Changed
 
 - The command and filter bars use k9s's prompt colors: the command bar's
