@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-10-01
+
 ### Added
 
 - `theme.Theme.BorderFocus` (default `#87CEFA` LightSkyBlue, k9s's frame
