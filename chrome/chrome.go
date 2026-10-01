@@ -880,6 +880,19 @@ func (c Chrome) renderHelpSection(s HelpSection, colWidth int) string {
 	header := c.Theme.On(headerColor)
 	desc := c.Theme.On(c.Theme.HelpDesc)
 
+	// The key column is as wide as the section's widest key plus a space,
+	// as in k9s; a fixed width left too little room for descriptions in a
+	// four-section overlay on a 120-column terminal, and they wrapped
+	// into the row below. A description that still does not fit ends in
+	// "…", keeping one row per entry and one cell clear before the next
+	// column.
+	keyW := 0
+	for _, e := range s.Entries {
+		keyW = max(keyW, lipgloss.Width(e.Key))
+	}
+	keyW++
+	descW := max(colWidth-keyW-1, 1)
+
 	var sb strings.Builder
 	sb.WriteString(header.Render(s.Title))
 	sb.WriteString("\n")
@@ -887,8 +900,8 @@ func (c Chrome) renderHelpSection(s HelpSection, colWidth int) string {
 		// Match the top-section convention: view-shaped keys (<N>)
 		// render in ShortcutView (magenta), everything else in
 		// ShortcutKey (blue). Keeps help and shortcut bar consistent.
-		sb.WriteString(c.keyStyle(e.Key).Render(padRight(e.Key, 14)))
-		sb.WriteString(desc.Render(e.Desc))
+		sb.WriteString(c.keyStyle(e.Key).Render(padRight(e.Key, keyW)))
+		sb.WriteString(desc.Render(ansi.Truncate(e.Desc, descW, "…")))
 		sb.WriteString("\n")
 	}
 	colStyle := lipgloss.NewStyle().Width(colWidth)

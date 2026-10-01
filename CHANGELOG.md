@@ -8,6 +8,13 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Fixed
+
+- Help overlay entries no longer wrap: each section's key column is as wide
+  as its widest key, as in k9s, and a description that still does not fit
+  ends in "…" on its own row. At 120 columns a fixed 14-column key left too
+  little room, so descriptions spilled into the row below. (#42)
+
 ## [0.0.7] - 2026-10-01
 
 ### Changed

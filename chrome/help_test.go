@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/blairham/tuikit/theme"
 )
@@ -84,6 +85,40 @@ func TestHelpMatchesTheKeyConstants(t *testing.T) {
 		}
 		if want := strings.NewReplacer("ctrl+", "ctrl-", "shift+tab", "backtab").Replace(constant); "<"+want+">" != shown {
 			t.Errorf("constant %q and help key %s disagree", constant, shown)
+		}
+	}
+}
+
+// TestHelpSectionNeverWraps pins one row per entry: the key column is the
+// section's widest key plus a space, and a description too long for what
+// is left ends in "…" instead of wrapping into the next entry's row or
+// running into the next column.
+func TestHelpSectionNeverWraps(t *testing.T) {
+	c := New(Config{Theme: theme.Default()})
+	sec := HelpSection{Title: "GENERAL", Entries: []HelpEntry{
+		{Key: "<a>", Desc: "All"},
+		{Key: "<backtab>", Desc: "Field Previous"},
+		{Key: "<b>", Desc: "Browse a published port in the browser"},
+	}}
+	const colWidth = 25
+	lines := strings.Split(strings.TrimRight(ansi.Strip(c.renderHelpSection(sec, colWidth)), " \n"), "\n")
+	if len(lines) != 1+len(sec.Entries) {
+		t.Fatalf("%d lines for a title and %d entries — an entry wrapped:\n%s",
+			len(lines), len(sec.Entries), strings.Join(lines, "\n"))
+	}
+	if !strings.HasPrefix(lines[1], "<a>       All") { // "<backtab>" is 9 wide: keys pad to 10
+		t.Errorf("key column not sized to the widest key: %q", lines[1])
+	}
+	if !strings.Contains(lines[2], "Field Previous") {
+		t.Errorf("a description that fits was cut: %q", lines[2])
+	}
+	long := strings.TrimRight(lines[3], " ")
+	if !strings.HasSuffix(long, "…") || !strings.HasPrefix(long, "<b>       Browse") {
+		t.Errorf("long description not ended with …: %q", long)
+	}
+	for _, l := range lines {
+		if w := lipgloss.Width(strings.TrimRight(l, " ")); w > colWidth-1 {
+			t.Errorf("%q is %d wide; the last cell must stay clear before the next column", l, w)
 		}
 	}
 }
