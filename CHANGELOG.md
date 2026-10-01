@@ -8,6 +8,11 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Fixed
+
+- The text typed into the command and filter bars is bold, as in k9s's
+  prompt (`[::b]`); the suggestion stays regular weight. (#33)
+
 ## [0.0.4] - 2026-10-01
 
 ### Changed

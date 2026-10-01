@@ -167,7 +167,7 @@ func (f *FilterBar) Update(msg tea.Msg, onFilter OnFilter) (handled bool, cmd te
 // Input().SetStyles after construction.
 func filterBarStyles(s textinput.Styles, t theme.Theme) textinput.Styles {
 	s.Focused.Prompt = t.On(t.Filter).Bold(true)
-	s.Focused.Text = t.On(t.InputText)
+	s.Focused.Text = t.On(t.InputText).Bold(true)
 	s.Focused.Placeholder = t.On(t.Muted)
 	s.Focused.Suggestion = t.On(t.Suggestion)
 	return s
