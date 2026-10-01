@@ -223,10 +223,9 @@ type HelpPanel struct {
 // HelpSection is one column of the help overlay.
 //
 // TitleColor optionally overrides the header color for this section.
-// Leave nil to use Theme.Filter (the chrome's default green). k9s
-// convention: color resource/hotkey sections in Theme.AccentAlt
-// (magenta) and leave general/navigation sections on the default —
-// matches the per-section coloring in k9s's help overlay.
+// Leave nil to use Theme.HelpSection: k9s draws every section heading
+// in the same plain green, so an override is for an app that wants to
+// set one section apart, not the k9s look.
 type HelpSection struct {
 	Title      string
 	TitleColor color.Color
@@ -875,9 +874,10 @@ func (c Chrome) helpBorderedContent(content string, outerWidth, innerHeight int)
 func (c Chrome) renderHelpSection(s HelpSection, colWidth int) string {
 	headerColor := s.TitleColor
 	if headerColor == nil {
-		headerColor = c.Theme.Filter
+		headerColor = c.Theme.HelpSection
 	}
-	header := c.Theme.On(headerColor).Bold(true).Underline(true)
+	// Plain, as k9s draws its section headings: no bold, no underline.
+	header := c.Theme.On(headerColor)
 	desc := c.Theme.On(c.Theme.HelpDesc)
 
 	var sb strings.Builder
