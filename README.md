@@ -85,7 +85,10 @@ See `examples/` for a runnable demo.
 has a "Fixed" entry describing a 3-row status bar matched to a 3-row
 reservation — that was the shape at the time and has since changed. Reserve one
 row. (The filter, command, and confirm bars are 3 rows each when active; the
-footer is 2.)
+footer is 2, or 0 while `Chrome.CrumbsHidden` is set — see `Chrome.ToggleCrumbs`
+and `chrome.KeyToggleCrumbs`, ctrl+g. Likewise the top section's
+`TopSectionRows()` drops to 0 while `Chrome.HeaderHidden` is set — see
+`Chrome.ToggleHeader` and `chrome.KeyToggleHeader`, ctrl+e.)
 
 ## Releases
 
