@@ -838,7 +838,7 @@ func (c Chrome) renderHelpOverlay(f Frame) string {
 	if len(f.Help.Sections) == 0 {
 		body := CenterInBox("No help configured.", innerW, innerH, c.Theme)
 		box := c.helpBorderedContent(body, width-2, innerH)
-		return InjectBorderTitle(box, c.helpTitleStyle().Render("help"), c.Theme)
+		return InjectBorderTitleColor(box, c.helpTitleStyle().Render("help"), c.Theme.HelpBorder, c.Theme)
 	}
 
 	colWidth := (width - 8) / len(f.Help.Sections)
@@ -851,7 +851,7 @@ func (c Chrome) renderHelpOverlay(f Frame) string {
 	}
 	body := lipgloss.JoinHorizontal(lipgloss.Top, cols...)
 	box := c.helpBorderedContent(body, width-2, innerH)
-	return InjectBorderTitle(box, c.helpTitleStyle().Render("help"), c.Theme)
+	return InjectBorderTitleColor(box, c.helpTitleStyle().Render("help"), c.Theme.HelpBorder, c.Theme)
 }
 
 // helpTitleStyle returns the bold pill style for the help overlay's
@@ -863,8 +863,8 @@ func (c Chrome) helpTitleStyle() lipgloss.Style {
 }
 
 // helpBorderedContent wraps content in a help-overlay border whose
-// foreground is [Theme.HelpBorder] (cyan), not the default
-// [Theme.Border] (dodger blue) used for the main content border —
+// foreground is [Theme.HelpBorder] (cyan), not the focused
+// [Theme.FocusBorder] (light sky blue) used for the main content border —
 // matches k9s's distinct help-overlay border.
 func (c Chrome) helpBorderedContent(content string, outerWidth, innerHeight int) string {
 	s := lipgloss.NewStyle().

@@ -43,6 +43,28 @@ t.Rebuild() // LogoStyle and Title now render in the new colors
 `NoPaintBackground()` theme stays unpainted. It overwrites any style
 assigned by hand, so override individual styles after calling it.
 
+### Border colors: focused vs unfocused
+
+k9s draws its focused frame in light sky blue (`#87CEFA`, its frame
+`focusColor`) and every other border in dodger blue. tuikit mirrors that
+with two fields:
+
+- **`Theme.BorderFocus`** (`#87CEFA` in `Default()`) — the main content
+  box: `Theme.TableBorder`, so `Chrome.BorderedContent`, and the top line
+  `chrome.InjectBorderTitle` repaints around the title.
+- **`Theme.Border`** (`#1E90FF`) — unfocused borders: modals, secondary
+  panes, and the action-key shortcut color.
+
+Read the focused color through `Theme.FocusBorder()`, which falls back to
+`Border` when `BorderFocus` is nil (a `Theme` built by hand rather than
+from `Default()`), so such a theme never renders with a nil color.
+
+`InjectBorderTitle` repaints the box's whole top line, so the color it
+uses must be the one the side borders use or the title row shows a seam.
+It assumes the focused content box. Any box drawn in another color goes
+through `InjectBorderTitleColor(box, title, color, theme)` with that
+color: the modal passes `Border`, the help overlay passes `HelpBorder`.
+
 ## `PaintBackground` — the load-bearing knob
 
 `Theme.PaintBackground` distinguishes the two terminal aesthetics tuikit

@@ -8,6 +8,26 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `theme.Theme.BorderFocus` (default `#87CEFA` LightSkyBlue, k9s's frame
+  focus color) and `Theme.FocusBorder()`, which falls back to `Border` when
+  `BorderFocus` is nil. `chrome.InjectBorderTitleColor` repaints a box's title
+  row in a given color, for boxes not drawn in the focus color. (#18)
+
+### Changed
+
+- The main content box (`Theme.TableBorder`, `Chrome.BorderedContent`) and the
+  top line `InjectBorderTitle` repaints now use the focus border color instead
+  of `Border`, matching k9s, which draws the focused frame in light sky blue.
+  Modals keep `Border`. (#18)
+
+### Fixed
+
+- The help overlay's title row was repainted in `Border` while its sides use
+  `HelpBorder`, leaving a color seam on the top line; it now uses `HelpBorder`
+  throughout. (#18)
+
 ## [0.0.1] - 2026-09-30
 
 ### Added

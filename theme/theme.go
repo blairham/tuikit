@@ -32,9 +32,16 @@ type Theme struct {
 	// every styled span; with false, only the outer screen wrapper.
 	Bg color.Color
 
-	// Border is the default border color (used by chrome.TableBorder
-	// and by InjectBorderTitle's repainted top line).
+	// Border is the unfocused border color: modals, secondary panes,
+	// and the action-key shortcut color.
 	Border color.Color
+
+	// BorderFocus is the focused-frame border color — the main content
+	// box ([Theme.TableBorder] and chrome.InjectBorderTitle's repainted
+	// top line). k9s draws its focused frame in light sky blue and keeps
+	// dodger blue for everything else. A nil BorderFocus (a Theme built
+	// by hand) falls back to Border; see [Theme.FocusBorder].
+	BorderFocus color.Color
 
 	// Foreground accents. Apps recolor any of these when constructing
 	// a custom theme. Changing one after [Default] or
@@ -107,13 +114,26 @@ func (t Theme) On(fg color.Color) lipgloss.Style {
 	return s
 }
 
+// FocusBorder returns the color to draw the focused content border in:
+// [Theme.BorderFocus], or [Theme.Border] when BorderFocus is nil (a
+// Theme constructed by hand rather than from [Default]). Read the
+// focused border color through this rather than the field, so a
+// hand-built theme never renders a nil color.
+func (t Theme) FocusBorder() color.Color {
+	if t.BorderFocus != nil {
+		return t.BorderFocus
+	}
+	return t.Border
+}
+
 // Default returns the canonical k9s-style theme: deep-black canvas,
-// dodger-blue borders, aqua/fuchsia accents, full background painting.
+// light-sky-blue focused border, dodger-blue unfocused borders, aqua/fuchsia accents, full background painting.
 // This is the default look.
 func Default() Theme {
 	t := Theme{
 		Bg:           lipgloss.Color("#000000"),
 		Border:       lipgloss.Color("#1E90FF"), // DodgerBlue
+		BorderFocus:  lipgloss.Color("#87CEFA"), // LightSkyBlue (k9s frame focusColor)
 		Accent:       lipgloss.Color("#00FFFF"), // Aqua / Cyan
 		AccentAlt:    lipgloss.Color("#FF00FF"), // Fuchsia
 		AccentBold:   lipgloss.Color("#FFEFD5"), // PapayaWhip
@@ -189,7 +209,7 @@ func (t *Theme) populateStyles() {
 		Padding(0, 1)
 	t.TableBorder = lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(t.Border)
+		BorderForeground(t.FocusBorder())
 	if t.PaintBackground {
 		t.TableBorder = t.TableBorder.
 			BorderBackground(t.Bg).
