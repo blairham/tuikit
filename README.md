@@ -90,6 +90,22 @@ and `chrome.KeyToggleCrumbs`, ctrl+g. Likewise the top section's
 `TopSectionRows()` drops to 0 while `Chrome.HeaderHidden` is set — see
 `Chrome.ToggleHeader` and `chrome.KeyToggleHeader`, ctrl+e.)
 
+## Header layout
+
+The top section is laid out the way k9s lays out its header:
+
+```
+ info panel | gap | views | actions | actions | ...      fill      | logo |
+```
+
+The info panel shrinks to its widest `InfoLines` row (capped at
+`Config.InfoLabelWidth`), and the shortcut columns start two cells after it,
+left-aligned, whether or not a logo is shown. The logo is pinned as a block
+against the right edge. `ShortcutGrid` wraps views and actions into columns of
+`Config.ShortcutRows` entries (6 by default, so `<0>`..`<5>` then `<6>`..),
+never taller than `TopSectionRows()`, and the header always occupies exactly
+`TopSectionRows()` rows.
+
 ## Releases
 
 This repo has **no goreleaser** — a release *is* a git tag, and consumers pick
