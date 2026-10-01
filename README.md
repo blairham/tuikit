@@ -55,6 +55,17 @@ func main() {
 }
 ```
 
+To recolor, adjust the color fields and call `Rebuild` before handing the
+theme out — the pre-built styles are computed from the colors at construction
+and do not follow a later assignment on their own:
+
+```go
+t := theme.Default()
+t.Logo = lipgloss.Color("#2496ED")
+t.Accent = lipgloss.Color("#2496ED")
+t.Rebuild()
+```
+
 Size the content area **before** rendering it, so the chrome's reservations and
 your table/viewport dimensions agree:
 
