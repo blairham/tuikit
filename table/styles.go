@@ -3,18 +3,29 @@ package table
 import (
 	"charm.land/bubbles/v2/table"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/blairham/tuikit/theme"
 )
 
-// KeyMap returns the default bubbles table keymap with j/k removed.
-// tuikit apps handle j/k at the global level (via [viewfsm.Router] or
-// equivalent) and re-feed arrow keys into the table, so the table's own
-// j/k bindings would double-trigger.
+// KeyMap returns the default bubbles table keymap with j/k removed from
+// LineUp/LineDown, deliberately: tuikit apps handle j/k at the global
+// level and translate them to arrow keys with [viewfsm.TranslateNavKey]
+// before feeding the table, so the table's own j/k bindings would
+// double-trigger (and would collide with app bindings for apps that
+// claim j/k for something else).
+//
+// A table built with this keymap therefore does nothing with a literal
+// j or k. Apps that want vim-style line movement must call
+// [viewfsm.TranslateNavKey] (or equivalent) first; apps that do not
+// should not advertise j/k in their help. The LineUp/LineDown help text
+// reads "↑"/"↓" to match.
 func KeyMap() table.KeyMap {
 	km := table.DefaultKeyMap()
 	km.LineUp.SetKeys("up")
+	km.LineUp.SetHelp("↑", "up")
 	km.LineDown.SetKeys("down")
+	km.LineDown.SetHelp("↓", "down")
 	return km
 }
 
@@ -74,13 +85,15 @@ func FitHeight(rows, maxHeight int) int {
 	return desired
 }
 
-// Truncate shortens s to maxLen runes, appending "…" if it was cut.
+// Truncate shortens s to at most maxLen terminal cells, replacing the
+// cut-off tail with "…" (which costs one cell). Width is measured in
+// display cells, not bytes or runes: a wide rune (CJK, emoji) costs two,
+// a cut never splits a rune or grapheme cluster, and ANSI escape
+// sequences are preserved without counting toward the width. A maxLen
+// below 1 means "no limit" and returns s unchanged.
 func Truncate(s string, maxLen int) string {
-	if maxLen < 1 || len(s) <= maxLen {
+	if maxLen < 1 {
 		return s
 	}
-	if maxLen <= 1 {
-		return "…"
-	}
-	return s[:maxLen-1] + "…"
+	return ansi.Truncate(s, maxLen, "…")
 }

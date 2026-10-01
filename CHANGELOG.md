@@ -8,6 +8,19 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Fixed
+
+- `table.Truncate` now truncates by display width (terminal cells) via
+  `ansi.Truncate` instead of slicing bytes. A cut can no longer tear a
+  multi-byte rune into invalid UTF-8, multi-byte runes no longer eat three
+  cells of budget for one, wide runes (CJK, emoji) no longer overrun
+  `maxLen`, and ANSI SGR sequences survive the cut. A `maxLen` below 1 still
+  means "no limit". (#3)
+- `table.KeyMap` help text for line up/down now reads `↑`/`↓` instead of
+  bubbles' `↑/k`/`↓/j`; `k`/`j` are deliberately unbound there (apps route
+  them through `viewfsm.TranslateNavKey`), so the help was advertising keys
+  that do nothing. The doc comment now says so explicitly. (#9)
+
 ## [0.0.0] - 2026-09-22
 
 Initial release: six composable packages under one module, all rooted on

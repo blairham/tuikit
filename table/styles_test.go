@@ -1,8 +1,12 @@
 package table
 
 import (
+	"slices"
 	"strings"
 	"testing"
+	"unicode/utf8"
+
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/blairham/tuikit/theme"
 )
@@ -19,12 +23,82 @@ func TestTruncate(t *testing.T) {
 		{"x", "x", 1},               // len equals maxLen, no truncate
 		{"xy", "…", 1},              // maxLen=1 + needs truncate → ellipsis only
 		{"", "", 5},
+		{"hello", "hello", 0},  // maxLen<1 → no limit
+		{"hello", "hello", -1}, // maxLen<1 → no limit
+		{"x", "x", 0},
+		// #3: a byte cut used to land inside "→" and tear it.
+		{"5433→5432/tcp 5433→5432/tcp", "5433→5432/tcp 5433→54…", 22},
+		{"a→b", "a→b", 3}, // 3 cells (5 bytes) fits in 3
+		{"→→→→", "→…", 2}, // cut by cell, not byte
+		{"日本語", "日本語", 6}, // 3 wide runes = 6 cells, fits exactly
+		{"日本語", "日…", 4},  // 日(2)+…(1); 本 would overrun
+		{"日本語", "日…", 3},
+		{"日本語", "…", 2}, // no room for a wide rune beside the ellipsis
+		{"日本語", "…", 1},
+		{"\x1b[31mhello world\x1b[0m", "\x1b[31mhell…\x1b[0m", 5}, // SGR kept, not counted
 	}
 	for _, c := range cases {
 		got := Truncate(c.in, c.maxLen)
 		if got != c.want {
 			t.Errorf("Truncate(%q, %d) = %q; want %q", c.in, c.maxLen, got, c.want)
 		}
+	}
+}
+
+// TestTruncateInvariants checks that for every cut point the result is
+// valid UTF-8, never wider than maxLen cells, and that strings already
+// within budget come back unchanged.
+func TestTruncateInvariants(t *testing.T) {
+	t.Parallel()
+	inputs := []string{
+		"5433→5432/tcp 5433→5432/tcp",
+		"日本語のテキスト",
+		"mixed ascii 和 wide 字 runes",
+		"emoji 🚀🚀🚀 rocket",
+		"plain ascii only",
+		"é́ combining",
+	}
+	for _, in := range inputs {
+		w := ansi.StringWidth(in)
+		for maxLen := 1; maxLen <= w+2; maxLen++ {
+			got := Truncate(in, maxLen)
+			if !utf8.ValidString(got) {
+				t.Errorf("Truncate(%q, %d) = %q: invalid UTF-8", in, maxLen, got)
+			}
+			if gw := ansi.StringWidth(got); gw > maxLen {
+				t.Errorf("Truncate(%q, %d) = %q: width %d > %d", in, maxLen, got, gw, maxLen)
+			}
+			if w <= maxLen && got != in {
+				t.Errorf("Truncate(%q, %d) = %q: fits (width %d) but was changed", in, maxLen, got, w)
+			}
+			if w > maxLen && !strings.HasSuffix(got, "…") {
+				t.Errorf("Truncate(%q, %d) = %q: cut without ellipsis", in, maxLen, got)
+			}
+		}
+	}
+}
+
+// TestKeyMap pins #9: j/k are deliberately unbound on LineUp/LineDown
+// (viewfsm.TranslateNavKey owns them), the arrows stay bound, and the
+// help text does not advertise keys that do nothing.
+func TestKeyMap(t *testing.T) {
+	t.Parallel()
+	km := KeyMap()
+	if got, want := km.LineUp.Keys(), []string{"up"}; !slices.Equal(got, want) {
+		t.Errorf("LineUp keys = %v; want %v", got, want)
+	}
+	if got, want := km.LineDown.Keys(), []string{"down"}; !slices.Equal(got, want) {
+		t.Errorf("LineDown keys = %v; want %v", got, want)
+	}
+	if h := km.LineUp.Help(); h.Key != "↑" || h.Desc != "up" {
+		t.Errorf("LineUp help = %q/%q; want \"↑\"/\"up\"", h.Key, h.Desc)
+	}
+	if h := km.LineDown.Help(); h.Key != "↓" || h.Desc != "down" {
+		t.Errorf("LineDown help = %q/%q; want \"↓\"/\"down\"", h.Key, h.Desc)
+	}
+	// The rest of the default keymap is untouched.
+	if !slices.Contains(km.GotoTop.Keys(), "g") || !slices.Contains(km.GotoBottom.Keys(), "G") {
+		t.Errorf("GotoTop/GotoBottom lost g/G: %v / %v", km.GotoTop.Keys(), km.GotoBottom.Keys())
 	}
 }
 
