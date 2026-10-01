@@ -194,6 +194,12 @@ func (c *CommandBar) Update(msg tea.Msg, dispatch Dispatch) (handled bool, cmd t
 			c.err = ""
 			c.Close()
 			return true, dCmd
+		case "right":
+			// → at the end of the input accepts the suggestion, as tab does
+			// and as in k9s. Mid-text it still moves the cursor.
+			if c.input.Position() == len([]rune(c.input.Value())) && c.input.CurrentSuggestion() != "" {
+				msg = tea.KeyPressMsg{Code: tea.KeyTab}
+			}
 		}
 		c.input, cmd = c.input.Update(msg)
 		if c.suggestFn != nil {
