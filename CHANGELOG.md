@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.12] - 2026-10-02
+
 ### Added
 
 - `chrome.SaveDump` writes a view to `<dir>/<name>-<timestamp>.txt` and returns
