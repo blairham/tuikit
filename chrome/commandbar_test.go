@@ -28,7 +28,7 @@ func TestCommandBar_InitialState(t *testing.T) {
 	if got := bar.Value(); got != "" {
 		t.Errorf("new bar value = %q; want empty", got)
 	}
-	if got := bar.Error(); got != "" {
+	if got := bar.ErrMsg(); got != "" {
 		t.Errorf("new bar error = %q; want empty", got)
 	}
 	if bar.Input() == nil {
@@ -40,12 +40,12 @@ func TestCommandBar_OpenClearsError(t *testing.T) {
 	t.Parallel()
 	bar := newBar(t, CommandBarOpts{})
 	bar.SetError("boom")
-	if bar.Error() != "boom" {
-		t.Fatalf("error not stored: %q", bar.Error())
+	if bar.ErrMsg() != "boom" {
+		t.Fatalf("error not stored: %q", bar.ErrMsg())
 	}
 	bar.Open()
-	if bar.Error() != "" {
-		t.Errorf("Open should clear error; got %q", bar.Error())
+	if bar.ErrMsg() != "" {
+		t.Errorf("Open should clear error; got %q", bar.ErrMsg())
 	}
 	if !bar.Active() {
 		t.Error("Open should activate")
@@ -98,8 +98,8 @@ func TestCommandBar_EscClosesAndClears(t *testing.T) {
 	if bar.Value() != "" {
 		t.Errorf("Esc should clear value; got %q", bar.Value())
 	}
-	if bar.Error() != "" {
-		t.Errorf("Esc should clear error; got %q", bar.Error())
+	if bar.ErrMsg() != "" {
+		t.Errorf("Esc should clear error; got %q", bar.ErrMsg())
 	}
 }
 
@@ -162,7 +162,7 @@ func TestCommandBar_EnterDispatchErrorKeepsBarOpen(t *testing.T) {
 	if !bar.Active() {
 		t.Error("error dispatch should keep the bar open")
 	}
-	if got := bar.Error(); got != "unknown command: bogus" {
+	if got := bar.ErrMsg(); got != "unknown command: bogus" {
 		t.Errorf("Error() = %q; want unknown command: bogus", got)
 	}
 	if bar.Value() != "bogus" {
