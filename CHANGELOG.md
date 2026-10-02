@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.14] - 2026-10-02
+
 ### Added
 
 - k9s skins. `theme.Skin` is k9s's skin schema with yaml tags, so an app
