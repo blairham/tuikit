@@ -294,3 +294,39 @@ func TestMaxLinesTrimsAtOnceAndPrependKeepsTheNewest(t *testing.T) {
 		t.Errorf("uncapped: %d lines, cap %d", m.LineCount(), m.MaxLines())
 	}
 }
+
+// TestReplaceLinesKeepsThePlace: a refetched document keeps the filter and,
+// scrolled, the offset — clamped when it shrinks — while a following view
+// stays at the bottom.
+func TestReplaceLinesKeepsThePlace(t *testing.T) {
+	m := New()
+	m.Resize(20, 2)
+	m.SetFollow(false)
+	m.ReplaceLines(numbered(1, 10))
+	m.HandleScrollKey("j")
+	m.HandleScrollKey("j")
+	m.HandleScrollKey("j")
+	before := strings.Split(m.View(), "\n")[0]
+	m.ReplaceLines(numbered(1, 10))
+	if after := strings.Split(m.View(), "\n")[0]; !strings.Contains(before, "line 04") || after != before {
+		t.Errorf("a refresh moved the view from %q to %q", before, after)
+	}
+	m.ReplaceLines(numbered(1, 3))
+	if top := strings.Split(m.View(), "\n")[0]; !strings.Contains(top, "line 02") {
+		t.Errorf("shorter content: top line %q, want the offset clamped to line 02", top)
+	}
+
+	m.SetFilter("line 0[13]")
+	m.ReplaceLines(numbered(1, 5))
+	if got := strings.Join(m.VisibleLines(), "|"); got != "line 01|line 03" {
+		t.Errorf("filter after a refresh: %q", got)
+	}
+
+	f := New()
+	f.Resize(20, 2)
+	f.ReplaceLines(numbered(1, 5))
+	f.ReplaceLines(numbered(1, 8))
+	if last := strings.Split(f.View(), "\n")[1]; !strings.Contains(last, "line 08") {
+		t.Errorf("a following view left the bottom: %q", last)
+	}
+}
