@@ -18,16 +18,23 @@ import (
 // background goroutine reading from a log shipper). The viewport
 // auto-scrolls when follow mode is on; the filter hides non-matching
 // lines without dropping them from the buffer, so toggling the filter
-// off restores everything.
+// off restores everything. Markers ([Model.AppendMarker]) pass every
+// filter.
 type Model struct {
 	filter   table.RowFilter
 	bgSeq    string
-	lines    []string
+	lines    []line
 	visible  []string
 	viewport viewport.Model
 	ready    bool
 	follow   bool
 	wrap     bool
+}
+
+// line is one buffered line. A marker shows whatever the filter.
+type line struct {
+	text   string
+	marker bool
 }
 
 // New constructs an empty tail model with follow=true.
@@ -133,10 +140,32 @@ func (m *Model) SetFilter(expr string) {
 // AppendLine adds a new raw line to the buffer. If the filter is active
 // and the line doesn't match, it's still kept in [Model.lines] but
 // excluded from the visible view.
-func (m *Model) AppendLine(line string) {
-	m.lines = append(m.lines, line)
-	if m.filter.Empty() || m.filter.MatchesAny(line) {
-		m.visible = append(m.visible, line)
+func (m *Model) AppendLine(text string) {
+	m.appendLines([]line{{text: text}})
+}
+
+// AppendMarker appends a line that every filter lets through — a separator
+// such as k9s's log mark, a stamped rule at the current end of the stream.
+// Filtering for the lines that matter after a mark is when the mark is
+// needed most, so a marker stays visible, in its place in the buffer, and
+// counts in [Model.VisibleLines] while shown. [Model.Clear] drops markers
+// with everything else.
+func (m *Model) AppendMarker(text string) {
+	m.appendLines([]line{{text: text, marker: true}})
+}
+
+// shows reports whether l passes the current filter.
+func (m *Model) shows(l line) bool {
+	return l.marker || m.filter.Empty() || m.filter.MatchesAny(l.text)
+}
+
+// appendLines buffers ls and refreshes the viewport once.
+func (m *Model) appendLines(ls []line) {
+	for _, l := range ls {
+		m.lines = append(m.lines, l)
+		if m.shows(l) {
+			m.visible = append(m.visible, l.text)
+		}
 	}
 	if m.ready {
 		m.viewport.SetContent(strings.Join(m.visible, "\n"))
@@ -155,18 +184,11 @@ func (m *Model) AppendLines(lines []string) {
 	if len(lines) == 0 {
 		return
 	}
-	for _, line := range lines {
-		m.lines = append(m.lines, line)
-		if m.filter.Empty() || m.filter.MatchesAny(line) {
-			m.visible = append(m.visible, line)
-		}
+	ls := make([]line, len(lines))
+	for i, text := range lines {
+		ls[i] = line{text: text}
 	}
-	if m.ready {
-		m.viewport.SetContent(strings.Join(m.visible, "\n"))
-		if m.follow {
-			m.viewport.GotoBottom()
-		}
-	}
+	m.appendLines(ls)
 }
 
 // PrependLines inserts older lines at the top of the buffer while preserving
@@ -179,15 +201,19 @@ func (m *Model) PrependLines(lines []string) {
 	if len(lines) == 0 {
 		return
 	}
-	m.lines = append(append([]string(nil), lines...), m.lines...)
+	older := make([]line, 0, len(lines)+len(m.lines))
+	for _, text := range lines {
+		older = append(older, line{text: text})
+	}
+	m.lines = append(older, m.lines...)
 
 	// Count how many prepended lines pass the filter, so the offset shifts by
 	// exactly the number of rows inserted above the current view.
 	added := len(lines)
 	if !m.filter.Empty() {
 		added = 0
-		for _, line := range lines {
-			if m.filter.MatchesAny(line) {
+		for _, text := range lines {
+			if m.filter.MatchesAny(text) {
 				added++
 			}
 		}
@@ -292,13 +318,9 @@ func (m *Model) View() string {
 
 func (m *Model) rebuildVisible() {
 	m.visible = m.visible[:0]
-	if m.filter.Empty() {
-		m.visible = append(m.visible, m.lines...)
-		return
-	}
 	for _, l := range m.lines {
-		if m.filter.MatchesAny(l) {
-			m.visible = append(m.visible, l)
+		if m.shows(l) {
+			m.visible = append(m.visible, l.text)
 		}
 	}
 }

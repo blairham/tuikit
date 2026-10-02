@@ -8,6 +8,13 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `tail.Model.AppendMarker` appends a line that every filter lets through —
+  a separator such as a log mark, which has to survive filtering for the
+  lines after it. It keeps its place in the buffer, counts in
+  `VisibleLines` while shown, and `Clear` drops it. (#51)
+
 ## [0.0.10] - 2026-10-01
 
 ### Changed
