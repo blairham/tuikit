@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.16] - 2026-10-02
+
 ### Added
 
 - `tail.Model.SetMaxLines` / `MaxLines` cap the buffer: past n lines the
