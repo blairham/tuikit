@@ -81,9 +81,10 @@ reservation `ContentInnerSize` subtracts too. Because 6 is the floor of the
 right column, the minimum header is 6 rows.
 
 Grid columns are sized from their widest key and description plus a
-one-space gap, floored at `Config.ShortcutKeyWidth` / `ShortcutDescWidth`
-(9 / 10 by default). `Shortcut` and `ShortcutPair` apply the same floor and
-gap per call, so adjacent columns never run together (#5); only
+one-space gap — a key column with no floor by default, as k9s pads keys
+(`<0> all`), a description column floored at `ShortcutDescWidth` (10 by
+default); `Config.ShortcutKeyWidth` sets an optional key floor (#59).
+`Shortcut` and `ShortcutPair` apply the same floor and gap per call, so adjacent columns never run together (#5); only
 `ShortcutGrid` can align a column across rows whose cells overflow the floor.
 
 ## Header layout
