@@ -216,10 +216,27 @@ func TestNew_ShortcutWidthsConfigurable(t *testing.T) {
 	if want := "<1>  Pods          <a>  Attach"; got != want {
 		t.Errorf("ShortcutPair = %q; want %q", got, want)
 	}
-	// Defaults are unchanged for apps that set neither.
+	// By default a key gets one space, as in k9s.
 	got = stripANSI(New(Config{}).ShortcutPair("<1>", "Pods", "<a>", "Attach"))
-	if want := "<1>      Pods      <a>      Attach"; got != want {
+	if want := "<1> Pods      <a> Attach"; got != want {
 		t.Errorf("default ShortcutPair = %q; want %q", got, want)
+	}
+}
+
+// TestShortcutGrid_KeyColumnFitsItsWidestKey: as in k9s, each key column
+// is its own widest key plus one space — a column of short keys keeps a
+// one-space gap even beside a column whose <ctrl-d> is wider.
+func TestShortcutGrid_KeyColumnFitsItsWidestKey(t *testing.T) {
+	t.Parallel()
+	c := New(Config{ShortcutRows: 2})
+	lines := c.ShortcutGrid(
+		[]Shortcut{{Key: "<0>", Desc: "all"}, {Key: "<1>", Desc: "state"}},
+		[]Shortcut{{Key: "<a>", Desc: "Attach"}, {Key: "<ctrl-d>", Desc: "Delete"}},
+	)
+	got := []string{stripANSI(lines[0]), stripANSI(lines[1])}
+	want := []string{"<0> all       <a>      Attach", "<1> state     <ctrl-d> Delete"}
+	if got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("grid =\n%q\nwant\n%q", got, want)
 	}
 }
 

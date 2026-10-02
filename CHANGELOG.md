@@ -8,6 +8,13 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Changed
+
+- A shortcut key column is as wide as its widest key plus one space, as k9s
+  pads keys (`<0> all`), instead of at least 9 cells, which left a wide gap
+  before the descriptions of a column of short keys. `Config.ShortcutKeyWidth`
+  is now an optional minimum (0, the default, means none). (#59)
+
 ## [0.0.12] - 2026-10-02
 
 ### Added

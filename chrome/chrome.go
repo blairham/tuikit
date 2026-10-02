@@ -47,11 +47,12 @@ type Chrome struct {
 	// TopSectionRows alongside len(Logo) and InfoPanelRows. 0 falls back
 	// to defaultShortcutRows (6, as in k9s).
 	ShortcutRows int
-	// ShortcutKeyWidth is the minimum width of a shortcut key column
-	// in [Chrome.Shortcut], [Chrome.ShortcutPair] and
-	// [Chrome.ShortcutGrid]. A key at least this wide grows its column
-	// so one space always separates it from its description. 0 falls
-	// back to defaultShortcutKeyWidth (9).
+	// ShortcutKeyWidth is an optional minimum width of a shortcut key
+	// column in [Chrome.Shortcut], [Chrome.ShortcutPair] and
+	// [Chrome.ShortcutGrid]. By default a key column is as wide as its
+	// widest key plus one space, as in k9s (`<0> all`); a key at least
+	// this wide still grows its column so one space always separates it
+	// from its description. 0 means no minimum.
 	ShortcutKeyWidth int
 	// ShortcutDescWidth is the minimum width of a padded shortcut
 	// description column (every description except the last on a row).
@@ -120,7 +121,6 @@ const (
 	defaultInfoPanelRows = 4
 	defaultShortcutRows  = 6
 
-	defaultShortcutKeyWidth  = 9
 	defaultShortcutDescWidth = 10
 )
 
@@ -556,7 +556,8 @@ type Shortcut struct {
 // pairs so column alignment is preserved.
 //
 // Each column is as wide as its widest key and description plus a
-// one-space gap, but never narrower than [Chrome.ShortcutKeyWidth] /
+// one-space gap — keys as k9s pads them, so `<0> all` — but never
+// narrower than [Chrome.ShortcutKeyWidth] (when set) /
 // [Chrome.ShortcutDescWidth], so columns line up across rows and never
 // run together.
 //
@@ -637,14 +638,10 @@ func (c Chrome) shortcutCell(s Shortcut, keyWidth, descWidth int) string {
 	return c.keyStyle(s.Key).Render(padRight(s.Key, keyWidth)) + c.Theme.ShortcutDesc.Render(desc)
 }
 
-// shortcutKeyWidth is the key column width that fits key with at least
-// one space after it, floored at the configured ShortcutKeyWidth.
+// shortcutKeyWidth is the key column width that fits key with one space
+// after it, floored at the configured ShortcutKeyWidth if any.
 func (c Chrome) shortcutKeyWidth(key string) int {
-	w := c.ShortcutKeyWidth
-	if w <= 0 {
-		w = defaultShortcutKeyWidth
-	}
-	return max(w, lipgloss.Width(key)+1)
+	return max(c.ShortcutKeyWidth, lipgloss.Width(key)+1)
 }
 
 // shortcutDescWidth is the padded description column width that fits
