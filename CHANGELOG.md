@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.17] - 2026-10-02
+
 ### Added
 
 - `tail.Model.ReplaceLines` swaps the whole buffer in place, keeping the
