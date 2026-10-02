@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.11] - 2026-10-01
+
 ### Added
 
 - `tail.Model.AppendMarker` appends a line that every filter lets through —
