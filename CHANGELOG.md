@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.13] - 2026-10-02
+
 ### Changed
 
 - A shortcut key column is as wide as its widest key plus one space, as k9s
