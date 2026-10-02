@@ -29,6 +29,7 @@ type Model struct {
 	ready    bool
 	follow   bool
 	wrap     bool
+	maxLines int
 }
 
 // line is one buffered line. A marker shows whatever the filter.
@@ -159,7 +160,58 @@ func (m *Model) shows(l line) bool {
 	return l.marker || m.filter.Empty() || m.filter.MatchesAny(l.text)
 }
 
-// appendLines buffers ls and refreshes the viewport once.
+// SetMaxLines caps the buffer at n lines: past it the oldest are dropped,
+// markers included — a long-running stream otherwise grows without bound,
+// and k9s caps a log view the same way (logger.buffer). A smaller cap trims
+// the buffer at once. 0 keeps every line.
+//
+// While following, the view stays on the newest line. Scrolled back, it
+// stays on the lines it shows: the offset moves up by the visible lines
+// dropped above it. With wrap on that is by line, not by wrapped row, so a
+// dropped line that wrapped can shift the view by a row.
+func (m *Model) SetMaxLines(n int) {
+	m.maxLines = max(n, 0)
+	m.refresh(m.trim())
+}
+
+// MaxLines is the buffer cap; 0 is none.
+func (m *Model) MaxLines() int { return m.maxLines }
+
+// trim drops the oldest lines past the cap and returns how many of them
+// were visible.
+func (m *Model) trim() int {
+	drop := len(m.lines) - m.maxLines
+	if m.maxLines == 0 || drop <= 0 {
+		return 0
+	}
+	dropped := 0
+	for _, l := range m.lines[:drop] {
+		if m.shows(l) {
+			dropped++
+		}
+	}
+	// Copied rather than re-sliced, so the dropped lines' memory goes too.
+	m.lines = append([]line(nil), m.lines[drop:]...)
+	m.visible = append([]string(nil), m.visible[dropped:]...)
+	return dropped
+}
+
+// refresh redraws after a change that removed dropped visible lines from
+// the top: pinned to the bottom when following, else moved up by them.
+func (m *Model) refresh(dropped int) {
+	if !m.ready {
+		return
+	}
+	offset := m.viewport.YOffset()
+	m.viewport.SetContent(strings.Join(m.visible, "\n"))
+	if m.follow {
+		m.viewport.GotoBottom()
+	} else {
+		m.viewport.SetYOffset(max(offset-dropped, 0))
+	}
+}
+
+// appendLines buffers ls, trims to the cap, and refreshes the viewport once.
 func (m *Model) appendLines(ls []line) {
 	for _, l := range ls {
 		m.lines = append(m.lines, l)
@@ -167,12 +219,7 @@ func (m *Model) appendLines(ls []line) {
 			m.visible = append(m.visible, l.text)
 		}
 	}
-	if m.ready {
-		m.viewport.SetContent(strings.Join(m.visible, "\n"))
-		if m.follow {
-			m.viewport.GotoBottom()
-		}
-	}
+	m.refresh(m.trim())
 }
 
 // AppendLines appends a batch of lines in a single update — one content
@@ -220,6 +267,9 @@ func (m *Model) PrependLines(lines []string) {
 	}
 
 	m.rebuildVisible()
+	// Into a full buffer the newest lines are kept, so what does not fit is
+	// the history just prepended.
+	added -= m.trim()
 	if !m.ready {
 		return
 	}

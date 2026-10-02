@@ -8,6 +8,14 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `tail.Model.SetMaxLines` / `MaxLines` cap the buffer: past n lines the
+  oldest are dropped, markers included, as k9s caps a log view at
+  `logger.buffer`. Scrolled back, the view stays on the lines it shows; a
+  full buffer keeps its newest lines over prepended history. 0, the
+  default, keeps every line. (#68)
+
 ## [0.0.15] - 2026-10-02
 
 ### Added

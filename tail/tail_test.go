@@ -1,6 +1,7 @@
 package tail
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -221,5 +222,75 @@ func TestMarkerStaysPutAndClears(t *testing.T) {
 	m.SetFilter("")
 	if m.LineCount() != 0 || m.VisibleCount() != 0 {
 		t.Errorf("Clear kept %d lines", m.LineCount())
+	}
+}
+
+func numbered(from, to int) []string {
+	out := make([]string, 0, to-from+1)
+	for i := from; i <= to; i++ {
+		out = append(out, fmt.Sprintf("line %02d", i))
+	}
+	return out
+}
+
+// TestMaxLinesDropsTheOldest: past the cap the oldest lines go, markers
+// with them, and the visible buffer stays the filter over what is left.
+func TestMaxLinesDropsTheOldest(t *testing.T) {
+	m := New()
+	m.SetMaxLines(4)
+	m.AppendMarker("-- mark --")
+	m.AppendLines(numbered(1, 5))
+	if got := strings.Join(m.VisibleLines(), "|"); got != "line 02|line 03|line 04|line 05" || m.LineCount() != 4 {
+		t.Errorf("capped buffer: %q (%d lines)", got, m.LineCount())
+	}
+	m.SetFilter("[24]")
+	m.AppendLines(numbered(6, 8))
+	if got := strings.Join(m.VisibleLines(), "|"); got != "" {
+		t.Errorf("filtered after more drops: %q", got)
+	}
+	m.SetFilter("")
+	if got := strings.Join(m.VisibleLines(), "|"); got != "line 05|line 06|line 07|line 08" {
+		t.Errorf("unfiltered after drops: %q", got)
+	}
+}
+
+// TestMaxLinesKeepsAScrolledViewStill: scrolled back, the lines on screen
+// stay on screen as older ones are dropped above them.
+func TestMaxLinesKeepsAScrolledViewStill(t *testing.T) {
+	m := New()
+	m.Resize(20, 2)
+	m.SetMaxLines(10)
+	m.AppendLines(numbered(1, 10))
+	m.HandleScrollKey("g")
+	m.HandleScrollKey("j")
+	m.HandleScrollKey("j")
+	before := strings.Split(m.View(), "\n")[0]
+	m.AppendLines(numbered(11, 12))
+	if after := strings.Split(m.View(), "\n")[0]; !strings.Contains(before, "line 03") || after != before {
+		t.Errorf("top line moved from %q to %q", before, after)
+	}
+	if m.LineCount() != 10 {
+		t.Errorf("%d lines kept, want 10", m.LineCount())
+	}
+}
+
+// TestMaxLinesTrimsAtOnceAndPrependKeepsTheNewest: lowering the cap trims
+// straight away; history prepended into a full buffer is what is dropped;
+// 0 is no cap.
+func TestMaxLinesTrimsAtOnceAndPrependKeepsTheNewest(t *testing.T) {
+	m := New()
+	m.AppendLines(numbered(1, 6))
+	m.SetMaxLines(3)
+	if got := strings.Join(m.VisibleLines(), "|"); got != "line 04|line 05|line 06" {
+		t.Errorf("lowered cap: %q", got)
+	}
+	m.PrependLines(numbered(1, 3))
+	if got := strings.Join(m.VisibleLines(), "|"); got != "line 04|line 05|line 06" {
+		t.Errorf("prepend into a full buffer: %q", got)
+	}
+	m.SetMaxLines(0)
+	m.AppendLines(numbered(7, 20))
+	if m.LineCount() != 17 || m.MaxLines() != 0 {
+		t.Errorf("uncapped: %d lines, cap %d", m.LineCount(), m.MaxLines())
 	}
 }
