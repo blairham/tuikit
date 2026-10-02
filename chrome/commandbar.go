@@ -45,7 +45,7 @@ type CommandBarOpts struct {
 // Enter on a non-empty value.
 //
 //   - Returning a non-empty errMsg keeps the bar open and surfaces
-//     the error via [CommandBar.Error]. The cursor stays at the end
+//     the error via [CommandBar.ErrMsg]. The cursor stays at the end
 //     of the value so the user can correct and retry.
 //   - Returning errMsg=="" closes the bar.
 //
@@ -126,8 +126,8 @@ func (c *CommandBar) Close() {
 // Value returns the current textinput value.
 func (c *CommandBar) Value() string { return c.input.Value() }
 
-// Error returns the current error message ("" if none).
-func (c *CommandBar) Error() string { return c.err }
+// ErrMsg returns the current error message ("" if none).
+func (c *CommandBar) ErrMsg() string { return c.err }
 
 // SetError replaces the current error string. Pass "" to clear.
 func (c *CommandBar) SetError(s string) { c.err = s }
@@ -169,11 +169,11 @@ func (c *CommandBar) Update(msg tea.Msg, dispatch Dispatch) (handled bool, cmd t
 
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
-		case "esc":
+		case keyStrEsc:
 			c.err = ""
 			c.Close()
 			return true, nil
-		case "enter":
+		case keyStrEnter:
 			value := strings.TrimSpace(c.input.Value())
 			if value == "" {
 				c.Close()

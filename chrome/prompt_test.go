@@ -16,8 +16,8 @@ func newPrompt(t *testing.T, opts PromptOpts) *Prompt {
 func TestPrompt_InitialState(t *testing.T) {
 	t.Parallel()
 	p := newPrompt(t, PromptOpts{})
-	if p.Active() || p.Value() != "" || p.Error() != "" {
-		t.Errorf("new Prompt should be zero state; got active=%v value=%q err=%q", p.Active(), p.Value(), p.Error())
+	if p.Active() || p.Value() != "" || p.ErrMsg() != "" {
+		t.Errorf("new Prompt should be zero state; got active=%v value=%q err=%q", p.Active(), p.Value(), p.ErrMsg())
 	}
 	if p.Input() == nil {
 		t.Error("Input() must not return nil")
@@ -76,8 +76,8 @@ func TestPrompt_EscClosesAndClears(t *testing.T) {
 	if !handled {
 		t.Error("Esc should be handled")
 	}
-	if p.Active() || p.Value() != "" || p.Error() != "" {
-		t.Errorf("Esc should clear all state; got active=%v value=%q err=%q", p.Active(), p.Value(), p.Error())
+	if p.Active() || p.Value() != "" || p.ErrMsg() != "" {
+		t.Errorf("Esc should clear all state; got active=%v value=%q err=%q", p.Active(), p.Value(), p.ErrMsg())
 	}
 }
 
@@ -129,8 +129,8 @@ func TestPrompt_DispatchErrorKeepsOpen(t *testing.T) {
 	if p.Value() != "bogus" {
 		t.Errorf("value should be preserved on error; got %q", p.Value())
 	}
-	if p.Error() != "invalid duration" {
-		t.Errorf("Error() = %q", p.Error())
+	if p.ErrMsg() != "invalid duration" {
+		t.Errorf("Error() = %q", p.ErrMsg())
 	}
 }
 

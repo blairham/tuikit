@@ -110,15 +110,6 @@ linters:
           - gocritic
         text: "initClause"
 
-      # --- Relaxed for adoption (extended-set rollout) — path-scoped so the
-      # linters stay live for new code. Burn-down:
-      # https://github.com/blairham/tuikit/issues/1 ---
-      - path: chrome/commandbar.go
-        linters: [errname, goconst]
-      - path: chrome/prompt.go
-        linters: [errname]
-      # --- End relaxed block ---
-
   settings:
     misspell:
       locale: US

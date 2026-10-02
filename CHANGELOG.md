@@ -8,6 +8,13 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** `CommandBar.Error` and `Prompt.Error` are now `ErrMsg`. An
+  `Error() string` method made both types satisfy `error` by accident, so
+  `fmt` printed a bar as its message and `errors.As` could match one. `SetError`
+  is unchanged. (#1)
+
 ## [0.0.11] - 2026-10-01
 
 ### Added

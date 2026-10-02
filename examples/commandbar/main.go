@@ -85,7 +85,7 @@ func (m model) View() tea.View {
 	if m.w == 0 || m.h == 0 {
 		return tea.View{}
 	}
-	err := m.bar.Error()
+	err := m.bar.ErrMsg()
 	_, innerH := m.chrome.ContentInnerSize(m.w, m.h, false, m.bar.Active(), false, err != "")
 	f := chrome.Frame{
 		Width:     m.w,

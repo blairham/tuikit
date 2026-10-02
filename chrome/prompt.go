@@ -122,8 +122,8 @@ func (p *Prompt) Close() {
 // Value returns the current textinput value.
 func (p *Prompt) Value() string { return p.input.Value() }
 
-// Error returns the current error message ("" if none).
-func (p *Prompt) Error() string { return p.err }
+// ErrMsg returns the current error message ("" if none).
+func (p *Prompt) ErrMsg() string { return p.err }
 
 // SetError replaces the current error string. Pass "" to clear.
 func (p *Prompt) SetError(s string) { p.err = s }
