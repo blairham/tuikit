@@ -70,7 +70,10 @@ type Theme struct {
 	MenuText    color.Color // shortcut descriptions; nil uses Muted
 	TableText   color.Color // table cell text; nil uses Selection
 	TableHeader color.Color // table header text; nil uses Value
-	LogText     color.Color // log line text an app draws without its own color; nil uses Selection
+	// SelectionText is the selected row's text (k9s's
+	// views.table.cursorFgColor); nil uses black.
+	SelectionText color.Color
+	LogText       color.Color // log line text an app draws without its own color; nil uses Selection
 	// Breadcrumb pills, k9s's frame.crumbs: black on aqua for the trail,
 	// black on orange for the current view.
 	BreadcrumbBg     color.Color // pill bg for the trail (k9s: aqua)
@@ -150,6 +153,12 @@ func (t Theme) LogTextColor() color.Color { return or(t.LogText, t.Selection) }
 // [Theme.Selection] when unset.
 func (t Theme) TableTextColor() color.Color { return or(t.TableText, t.Selection) }
 
+// SelectionTextColor is the selected row's text color:
+// [Theme.SelectionText], or black when unset.
+func (t Theme) SelectionTextColor() color.Color {
+	return or(t.SelectionText, lipgloss.Color("#000000"))
+}
+
 // TableHeaderColor is the table header text color: [Theme.TableHeader],
 // or [Theme.Value] when unset.
 func (t Theme) TableHeaderColor() color.Color { return or(t.TableHeader, t.Value) }
@@ -177,6 +186,7 @@ func Default() Theme {
 		Suggestion:       lipgloss.Color("#1E90FF"), // DodgerBlue (k9s prompt suggestion)
 		Selection:        lipgloss.Color("#87CEFA"), // LightSkyBlue
 		Mark:             lipgloss.Color("#98FB98"), // PaleGreen (k9s table markColor)
+		SelectionText:    lipgloss.Color("#000000"), // Black (k9s table cursorFgColor)
 		BreadcrumbBg:     lipgloss.Color("#00FFFF"), // Aqua (k9s crumbs bgColor)
 		BreadcrumbFg:     lipgloss.Color("#000000"), // Black (k9s crumbs fgColor)
 		BreadcrumbActive: lipgloss.Color("#FFA500"), // Orange (k9s crumbs activeColor)

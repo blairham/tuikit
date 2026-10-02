@@ -6,6 +6,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"charm.land/bubbles/v2/table"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
@@ -203,5 +204,55 @@ func TestStylesUseTheSkinsTableColors(t *testing.T) {
 	d := Styles(theme.Default())
 	if d.Cell.GetForeground() != theme.Default().Selection || d.Header.GetForeground() != theme.Default().Value {
 		t.Error("unset table colors changed the default look")
+	}
+}
+
+// TestFixRowsPaintsWithTheThemesColors: under a skin, the selected row is
+// found and drawn by the theme's selection colors, and the padding after a
+// styled cell on another row keeps the theme's canvas — the dark blocks
+// FixSelectedRow left on any canvas but black.
+func TestFixRowsPaintsWithTheThemesColors(t *testing.T) {
+	t.Parallel()
+	th := theme.Default()
+	th.Bg = lipgloss.Color("#282a36")
+	th.Selection = lipgloss.Color("#44475a")
+	th.SelectionText = lipgloss.Color("#f8f8f2")
+	th.Rebuild()
+	tbl := table.New(
+		table.WithColumns([]table.Column{{Title: "NAME", Width: 8}, {Title: "STATE", Width: 10}}),
+		table.WithRows([]table.Row{
+			{"web", lipgloss.NewStyle().Foreground(lipgloss.Color("#50fa7b")).Render("running")},
+			{"api", lipgloss.NewStyle().Foreground(lipgloss.Color("#50fa7b")).Render("running")},
+		}),
+		table.WithStyles(StylesWithWidth(th, 22)),
+		table.WithHeight(6),
+		table.WithWidth(22),
+		table.WithFocused(true),
+	)
+	out := strings.Split(FixRows(tbl.View(), th), "\n")
+	bg := theme.BackgroundSeq(th.Bg)
+	if len(out) < 3 {
+		t.Fatalf("rendered %d lines", len(out))
+	}
+	selected, other := out[1], out[2]
+	if !strings.Contains(selected, "38;2;248;248;242;48;2;68;71;90") {
+		t.Errorf("selected row not drawn in the skin's cursor colors: %q", selected)
+	}
+	if !strings.Contains(other, "\x1b[m"+bg) {
+		t.Errorf("the canvas is not re-asserted after the styled cell: %q", other)
+	}
+	if strings.Contains(FixSelectedRow(tbl.View(), PaintModeFull), "\x1b[m"+bg) {
+		t.Error("setup: FixSelectedRow already handles this canvas, so the test proves nothing")
+	}
+}
+
+// TestFixRowsIsFixSelectedRowForTheDefault: with the default colors the two
+// agree, so moving to FixRows changes nothing for an unskinned app.
+func TestFixRowsIsFixSelectedRowForTheDefault(t *testing.T) {
+	t.Parallel()
+	in := "\x1b[1;48;2;135;206;250m\x1b[38;2;1;2;3mcell-a\x1b[m \x1b[38;2;1;2;3mcell-b\x1b[m\n" +
+		"\x1b[38;2;255;0;0mcell-a\x1b[m \x1b[38;2;0;255;0mcell-b\x1b[m"
+	if FixRows(in, theme.Default()) != FixSelectedRow(in, PaintModeFull) {
+		t.Error("FixRows and FixSelectedRow disagree on the default theme")
 	}
 }

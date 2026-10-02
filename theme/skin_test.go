@@ -124,6 +124,7 @@ k9s:
     table:
       fgColor: "#f8f8f2"
       cursorColor: "#111111"
+      cursorFgColor: "#f8f8f2"
       cursorBgColor: "#44475a"
       markColor: "#ffb86c"
       header: {fgColor: "#f1fa8c"}
@@ -166,6 +167,7 @@ func TestWithSkin(t *testing.T) {
 		"HelpSection":             {got.HelpSection, lipgloss.Color("#50fa7b")},
 		"Selection (Bg wins)":     {got.Selection, lipgloss.Color("#44475a")},
 		"TableText":               {got.TableText, lipgloss.Color("#f8f8f2")},
+		"SelectionText":           {got.SelectionText, lipgloss.Color("#f8f8f2")},
 		"TableHeader":             {got.TableHeader, lipgloss.Color("#f1fa8c")},
 		"Mark":                    {got.Mark, lipgloss.Color("#ffb86c")},
 		"LogText":                 {got.LogText, lipgloss.Color("#f8f8f2")},

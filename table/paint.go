@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"strings"
 
+	"charm.land/lipgloss/v2"
+
 	"github.com/blairham/tuikit/theme"
 )
 
@@ -69,23 +71,68 @@ var (
 // only on the first column and read the rest of the row in the
 // pre-Selected cell-foreground color (typically invisible against
 // the highlight if their colors collide).
+//
+// It assumes the default theme's colors (light-sky-blue selection, black
+// canvas and selected text). A theme with others — a skin, or
+// [theme.Theme.Inverted] — needs [FixRows].
 func FixSelectedRow(view string, mode PaintMode) string {
+	return painter{selBg: selectedBgMarker, selFg: "38;2;0;0;0", bg: blackBgMarker}.fix(view, mode)
+}
+
+// FixRows is [FixSelectedRow] with the theme's own colors: the selected
+// row is found by [theme.Theme.Selection] and drawn in
+// [theme.Theme.SelectionTextColor], and when the theme paints its canvas
+// the other rows keep [theme.Theme.Bg] across cell resets.
+func FixRows(view string, t theme.Theme) string {
+	p := painter{
+		selBg: sgrParams(theme.BackgroundSeq(t.Selection)),
+		selFg: sgrParams(lipgloss.NewStyle().Foreground(t.SelectionTextColor()).Render(" ")),
+		bg:    sgrParams(theme.BackgroundSeq(t.Bg)),
+	}
+	if p.selBg == "" || p.selFg == "" || p.bg == "" {
+		return view
+	}
+	return p.fix(view, PaintModeFor(t))
+}
+
+// sgrParams is the parameters of the SGR sequence s starts with:
+// "48;2;135;206;250" for "\x1b[48;2;135;206;250m …". "" if s starts with
+// none.
+func sgrParams(s string) string {
+	rest, ok := strings.CutPrefix(s, "\x1b[")
+	if !ok {
+		return ""
+	}
+	params, _, ok := strings.Cut(rest, "m")
+	if !ok {
+		return ""
+	}
+	return params
+}
+
+// painter repaints a table with one set of colors, as SGR parameters: the
+// selection's background and text, and the canvas.
+type painter struct {
+	selBg, selFg, bg string
+}
+
+func (p painter) fix(view string, mode PaintMode) string {
 	lines := strings.Split(view, "\n")
 	for i, line := range lines {
 		switch {
-		case strings.Contains(line, selectedBgMarker):
-			lines[i] = fixSelectedLine(line)
+		case strings.Contains(line, p.selBg):
+			lines[i] = p.selectedLine(line)
 		case mode == PaintModeFull:
-			lines[i] = paintCellBackgrounds(line)
+			lines[i] = p.paintLine(line)
 		}
 	}
 	return strings.Join(lines, "\n")
 }
 
-func fixSelectedLine(line string) string {
-	line = strings.ReplaceAll(line, blackBgMarker, selectedBgMarker)
-	line = fgCodeRe.ReplaceAllString(line, "38;2;0;0;0")
-	reapply := "\x1b[m\x1b[1;38;2;0;0;0;" + selectedBgMarker + "m"
+func (p painter) selectedLine(line string) string {
+	line = strings.ReplaceAll(line, p.bg, p.selBg)
+	line = fgCodeRe.ReplaceAllString(line, p.selFg)
+	reapply := "\x1b[m\x1b[1;" + p.selFg + ";" + p.selBg + "m"
 	line = resetRe.ReplaceAllString(line, reapply)
 	if idx := strings.LastIndex(line, reapply); idx >= 0 {
 		line = line[:idx] + "\x1b[m"
@@ -93,10 +140,10 @@ func fixSelectedLine(line string) string {
 	return line
 }
 
-func paintCellBackgrounds(line string) string {
+func (p painter) paintLine(line string) string {
 	// Fast path: pure-text lines (no ANSI) need no rewrite.
 	if !strings.Contains(line, "\x1b[") {
 		return line
 	}
-	return theme.ReassertBackground(line, "\x1b["+blackBgMarker+"m")
+	return theme.ReassertBackground(line, "\x1b["+p.bg+"m")
 }

@@ -204,6 +204,7 @@ func (t Theme) WithSkin(s Skin) (Theme, error) {
 		{&t.Selection, "views.table.cursorColor", s.Views.Table.CursorColor},
 		{&t.Selection, "views.table.cursorBgColor", s.Views.Table.CursorBgColor},
 		{&t.TableText, "views.table.fgColor", s.Views.Table.FgColor},
+		{&t.SelectionText, "views.table.cursorFgColor", s.Views.Table.CursorFgColor},
 		{&t.Mark, "views.table.markColor", s.Views.Table.MarkColor},
 		{&t.TableHeader, "views.table.header.fgColor", s.Views.Table.Header.FgColor},
 		{&t.LogText, "views.logs.fgColor", s.Views.Logs.FgColor},
