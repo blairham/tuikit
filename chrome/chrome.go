@@ -797,21 +797,26 @@ func (c Chrome) renderStatusBar(msg string, level StatusBarLevel, width int) str
 	return s.Render(" " + WrapText(msg, innerWidth))
 }
 
+// renderFooter draws the breadcrumbs as k9s does: a bold pill per level,
+// "<name>" lowercased with spaces removed, the trail on BreadcrumbBg and the
+// current view on BreadcrumbActive, one space between pills.
 func (c Chrome) renderFooter(crumbs []Crumb, width int) string {
-	sep := c.Theme.MutedStyle.Render(" › ")
-	leaf := c.Theme.PromptStyle
 	pill := lipgloss.NewStyle().
-		Background(c.Theme.BreadcrumbBg).
-		Foreground(c.Theme.Value).
+		Foreground(c.Theme.BreadcrumbFg).
+		Bold(true).
 		Padding(0, 1)
+	sep := " "
+	if c.Theme.PaintBackground {
+		sep = lipgloss.NewStyle().Background(c.Theme.Bg).Render(sep)
+	}
 
 	parts := make([]string, 0, len(crumbs))
 	for _, cr := range crumbs {
+		bg := c.Theme.BreadcrumbBg
 		if cr.Leaf {
-			parts = append(parts, leaf.Render(cr.Label))
-		} else {
-			parts = append(parts, pill.Render(cr.Label))
+			bg = c.Theme.BreadcrumbActive
 		}
+		parts = append(parts, pill.Background(bg).Render(CrumbText(cr.Label)))
 	}
 
 	footer := lipgloss.NewStyle().Width(width).Height(2)
@@ -819,6 +824,12 @@ func (c Chrome) renderFooter(crumbs []Crumb, width int) string {
 		footer = footer.Background(c.Theme.Bg)
 	}
 	return footer.Render(" " + strings.Join(parts, sep))
+}
+
+// CrumbText is a crumb's label as the footer draws it: "<name>", lowercased
+// with spaces removed — "Port Forwards" is <portforwards>.
+func CrumbText(label string) string {
+	return "<" + strings.ToLower(strings.ReplaceAll(label, " ", "")) + ">"
 }
 
 func (c Chrome) renderHelpOverlay(f Frame) string {
