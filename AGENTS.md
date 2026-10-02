@@ -45,7 +45,7 @@ Six composable packages under one module, all rooted on `theme`. Apps import whi
 |---|---|
 | `theme/` | Color palette + lipgloss styles + the `Theme` struct apps inject at construction (the DI seed every other package reads from). |
 | `chrome/` | The visual frame: top section, bordered content, footer, filter / command / confirm bars, `Modal` (centered popup), `Prompt` (one-shot prefilled text input), the `VersionLine` info row, and the help overlay. |
-| `table/` | Themed `bubbles/v2/table` styles, the `FixSelectedRow` ANSI fix, a `RowFilter`, and a `Sorter` (shift+←/→ sort column, stable sort, header indicator). |
+| `table/` | Themed `bubbles/v2/table` styles, the `FixSelectedRow` ANSI fix, a `RowFilter`, a `Sorter` (shift+←/→ sort column, stable sort, header indicator), and `Marks` (space / ctrl+space / ctrl+\ row marks keyed to survive re-sorts). |
 | `tail/` | Viewport + follow-mode + `RowFilter` for log streams. |
 | `loading/` | Spinner + rotating-tip loading / transition screen. |
 | `viewfsm/` | The `Router` over `ViewID` constants: drill stack, digit hotkeys, breadcrumbs, plus the `TranslateNavKey` helper. **No `View` interface** — apps own their view models. |
@@ -60,7 +60,7 @@ Six composable packages under one module. Apps import whichever subset they need
 theme  ── color palette + lipgloss styles + Theme struct (DI seed)
    │
    ├──► chrome    (visual frame: top section, bordered content, footer, bars, help overlay)
-   ├──► table     (themed bubbles/v2/table styles, FixSelectedRow ANSI fix, RowFilter, Sorter)
+   ├──► table     (themed bubbles/v2/table styles, FixSelectedRow ANSI fix, RowFilter, Sorter, Marks)
    ├──► tail      (viewport + follow-mode + RowFilter for log streams)
    ├──► loading   (spinner + rotating-tip loading/transition screen)
    └──► viewfsm   (Router over ViewID consts: drill stack, digit hotkeys, breadcrumbs)

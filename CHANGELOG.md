@@ -10,6 +10,15 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ### Added
 
+- `table.Marks` marks rows for bulk actions as k9s does: `HandleKey` takes
+  space (toggle the cursor row), ctrl+space (mark from the last mark to the
+  cursor) and ctrl+\ (clear), as `KeyMarkToggle` / `KeyMarkRange` /
+  `KeyMarkClear`. Marks are keyed by a row key (the first cell by default),
+  so they follow their rows through re-sorts and refreshes; `Prune` drops
+  marks whose rows went away. `Selected` gives the rows an action applies
+  to (the marked rows, or the cursor row when none are marked), and `Style`
+  draws marked rows in the new `theme.Theme.MarkStyle` (`Mark` color,
+  palegreen as in k9s). (#24)
 - `table.Sorter` gives every table k9s's column sort: `HandleKey` moves the
   sort column on shift+←/→ (`KeySortPrev` / `KeySortNext`), `SortBy` selects
   a column and reverses the direction when it is already active, `Sort` is a
