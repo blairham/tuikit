@@ -8,6 +8,13 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `tail.Model.ReplaceLines` swaps the whole buffer in place, keeping the
+  filter, the follow state and the scroll offset (clamped when the content
+  shrinks) — for a view that refetches a document, so a refresh keeps the
+  reader's place. (#71)
+
 ## [0.0.16] - 2026-10-02
 
 ### Added

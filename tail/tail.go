@@ -222,6 +222,31 @@ func (m *Model) appendLines(ls []line) {
 	m.refresh(m.trim())
 }
 
+// ReplaceLines makes lines the whole buffer, for a view that refetches a
+// document — an inspect pane — rather than streaming one. The filter, the
+// follow state and the scroll offset carry over, so a refresh, manual or on
+// a timer, keeps the reader's place: a following view stays at the bottom,
+// any other at its offset, clamped when the new content is shorter.
+// Markers are dropped with the old lines; the cap applies.
+func (m *Model) ReplaceLines(lines []string) {
+	m.lines = m.lines[:0]
+	for _, text := range lines {
+		m.lines = append(m.lines, line{text: text})
+	}
+	m.rebuildVisible()
+	m.trim()
+	if !m.ready {
+		return
+	}
+	offset := m.viewport.YOffset()
+	m.viewport.SetContent(strings.Join(m.visible, "\n"))
+	if m.follow {
+		m.viewport.GotoBottom()
+	} else {
+		m.viewport.SetYOffset(offset) // the viewport clamps it to the content
+	}
+}
+
 // AppendLines appends a batch of lines in a single update — one content
 // rebuild and at most one auto-scroll, instead of repeating that work per line
 // as [Model.AppendLine] does. Filter handling matches AppendLine. Apps feeding
