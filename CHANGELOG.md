@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.10] - 2026-10-01
+
 ### Changed
 
 - Breadcrumbs are drawn as k9s draws them: a bold `<name>` pill per level,
