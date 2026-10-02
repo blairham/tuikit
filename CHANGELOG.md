@@ -8,6 +8,15 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `table.Sorter` gives every table k9s's column sort: `HandleKey` moves the
+  sort column on shift+←/→ (`KeySortPrev` / `KeySortNext`), `SortBy` selects
+  a column and reverses the direction when it is already active, `Sort` is a
+  stable sort over the rows (ANSI ignored, numbers compared as numbers via
+  `NaturalCompare`, replaceable with `SetCompare`), and `Columns` appends
+  `↑`/`↓` to the active header. Call `Sort` and `Columns` on every refresh. (#25)
+
 ### Changed
 
 - **Breaking:** `CommandBar.Error` and `Prompt.Error` are now `ErrMsg`. An
