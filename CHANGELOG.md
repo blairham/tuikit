@@ -10,6 +10,14 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ### Added
 
+- `chrome.SaveDump` writes a view to `<dir>/<name>-<timestamp>.txt` and returns
+  the path for a status flash. ANSI is stripped, `dir` is created on demand,
+  the name is made filename-safe, and a second save in the same second gets a
+  `-2` suffix instead of overwriting. `chrome.KeySave` (ctrl+s) is the
+  conventional binding. `table.PlainText` renders a table's header and every
+  row as aligned plain text to feed it; a tail's `VisibleLines` serves the same
+  purpose for log views. (#26)
+
 - `table.Marks` marks rows for bulk actions as k9s does: `HandleKey` takes
   space (toggle the cursor row), ctrl+space (mark from the last mark to the
   cursor) and ctrl+\ (clear), as `KeyMarkToggle` / `KeyMarkRange` /
