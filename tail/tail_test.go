@@ -178,3 +178,48 @@ func TestVisibleLinesIsTheFilteredCopy(t *testing.T) {
 		t.Error("VisibleLines returned the buffer itself, not a copy")
 	}
 }
+
+func TestMarkerPassesEveryFilter(t *testing.T) {
+	// Filter set before the marker arrives: the append path.
+	m := New()
+	m.SetFilter("error")
+	m.AppendLines([]string{"error: a", "info: b"})
+	m.AppendMarker("── mark ──")
+	m.AppendLines([]string{"info: c", "error: d"})
+	if got := strings.Join(m.VisibleLines(), "|"); got != "error: a|── mark ──|error: d" {
+		t.Errorf("filtered before the mark: %q", got)
+	}
+
+	// Filter set afterwards: the rebuild path, which also keeps its place.
+	m.SetFilter("")
+	if got := strings.Join(m.VisibleLines(), "|"); got != "error: a|info: b|── mark ──|info: c|error: d" {
+		t.Errorf("unfiltered: %q", got)
+	}
+	m.SetFilter("info")
+	if got := strings.Join(m.VisibleLines(), "|"); got != "info: b|── mark ──|info: c" {
+		t.Errorf("filtered after the mark: %q", got)
+	}
+	if m.VisibleCount() != 3 || m.LineCount() != 5 {
+		t.Errorf("counts: visible %d of %d, want 3 of 5", m.VisibleCount(), m.LineCount())
+	}
+}
+
+func TestMarkerStaysPutAndClears(t *testing.T) {
+	m := New()
+	m.Resize(40, 10)
+	m.AppendLine("new")
+	m.AppendMarker("── mark ──")
+	m.SetFilter("old")
+	m.PrependLines([]string{"old one", "other"})
+	if got := strings.Join(m.VisibleLines(), "|"); got != "old one|── mark ──" {
+		t.Errorf("after prepending older lines: %q", got)
+	}
+	if !strings.Contains(m.View(), "── mark ──") {
+		t.Errorf("the marker is not drawn: %q", m.View())
+	}
+	m.Clear()
+	m.SetFilter("")
+	if m.LineCount() != 0 || m.VisibleCount() != 0 {
+		t.Errorf("Clear kept %d lines", m.LineCount())
+	}
+}

@@ -3,7 +3,8 @@
 //
 // Apps append lines via [Model.AppendLine] as they arrive; the viewport
 // auto-scrolls when follow mode is on, the filter ([RowFilter]) hides
-// non-matching lines, and standard scroll keys (ctrl-f/b, ctrl-d/u,
+// non-matching lines — except markers ([Model.AppendMarker]), separators
+// that every filter lets through — and standard scroll keys (ctrl-f/b, ctrl-d/u,
 // g/G, j/k, f to toggle follow) are dispatched via
 // [Model.HandleScrollKey].
 package tail
