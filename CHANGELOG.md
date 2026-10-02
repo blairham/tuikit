@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.15] - 2026-10-02
+
 ### Added
 
 - `table.FixRows(view, theme)`: `FixSelectedRow` with the theme's colors.
