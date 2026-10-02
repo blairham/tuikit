@@ -63,6 +63,14 @@ type Theme struct {
 	Suggestion    color.Color // inline completion after the typed text (k9s: dodgerblue)
 	Selection     color.Color // selected row bg (e.g. light sky blue)
 	Mark          color.Color // marked-row text (k9s: palegreen)
+	// Optional colors a skin can set (k9s's frame.menu, views.table and
+	// views.logs). Each falls back to the color used before it existed.
+	MenuKey     color.Color // shortcut action keys; nil uses Border
+	MenuNumKey  color.Color // shortcut view keys (<0>..<9>); nil uses AccentAlt
+	MenuText    color.Color // shortcut descriptions; nil uses Muted
+	TableText   color.Color // table cell text; nil uses Selection
+	TableHeader color.Color // table header text; nil uses Value
+	LogText     color.Color // log line text an app draws without its own color; nil uses Selection
 	// Breadcrumb pills, k9s's frame.crumbs: black on aqua for the trail,
 	// black on orange for the current view.
 	BreadcrumbBg     color.Color // pill bg for the trail (k9s: aqua)
@@ -131,11 +139,20 @@ func (t Theme) On(fg color.Color) lipgloss.Style {
 // focused border color through this rather than the field, so a
 // hand-built theme never renders a nil color.
 func (t Theme) FocusBorder() color.Color {
-	if t.BorderFocus != nil {
-		return t.BorderFocus
-	}
-	return t.Border
+	return or(t.BorderFocus, t.Border)
 }
+
+// LogTextColor is the color for log text with no color of its own:
+// [Theme.LogText], or [Theme.Selection] when unset.
+func (t Theme) LogTextColor() color.Color { return or(t.LogText, t.Selection) }
+
+// TableTextColor is the table cell text color: [Theme.TableText], or
+// [Theme.Selection] when unset.
+func (t Theme) TableTextColor() color.Color { return or(t.TableText, t.Selection) }
+
+// TableHeaderColor is the table header text color: [Theme.TableHeader],
+// or [Theme.Value] when unset.
+func (t Theme) TableHeaderColor() color.Color { return or(t.TableHeader, t.Value) }
 
 // Default returns the canonical k9s-style theme: deep-black canvas,
 // light-sky-blue focused border, dodger-blue unfocused borders, aqua/fuchsia accents, full background painting.
@@ -210,9 +227,9 @@ func (t *Theme) Rebuild() {
 func (t *Theme) populateStyles() {
 	t.InfoLabel = t.On(t.Label)
 	t.InfoValue = t.On(t.Value).Bold(true)
-	t.ShortcutKey = t.On(t.Border).Bold(true)
-	t.ShortcutView = t.On(t.AccentAlt).Bold(true)
-	t.ShortcutDesc = t.On(t.Muted)
+	t.ShortcutKey = t.On(or(t.MenuKey, t.Border)).Bold(true)
+	t.ShortcutView = t.On(or(t.MenuNumKey, t.AccentAlt)).Bold(true)
+	t.ShortcutDesc = t.On(or(t.MenuText, t.Muted))
 	t.LogoStyle = t.On(t.Logo).Bold(true)
 	t.Title = t.On(t.Accent).Bold(true)
 	t.Error = t.On(t.Status.Error).Bold(true)
