@@ -8,6 +8,17 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `table.FixRows(view, theme)`: `FixSelectedRow` with the theme's colors.
+  `FixSelectedRow` assumed the default light-sky-blue selection and black
+  canvas, so under a skin or `Theme.Inverted` the selected row went
+  unrecognized and the padding after every styled cell showed the
+  terminal's own background. Apps that skin should call `FixRows`. (#65)
+- `Theme.SelectionText` (k9s's `views.table.cursorFgColor`, black by
+  default) for the selected row's text, so an inverted theme turns it white
+  along with the selection. (#65)
+
 ## [0.0.14] - 2026-10-02
 
 ### Added
