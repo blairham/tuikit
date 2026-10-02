@@ -1,6 +1,7 @@
 package chrome
 
 import (
+	"image/color"
 	"strings"
 	"testing"
 
@@ -590,7 +591,7 @@ func TestRender_CrumbsHiddenContentReachesBottom(t *testing.T) {
 				t.Fatalf("hide=%v status=%q: %d lines; want %d", hide, status, len(lines), h)
 			}
 			out := strings.Join(lines, "\n")
-			if got := strings.Contains(out, "Crumbzz"); got == hide {
+			if got := strings.Contains(out, CrumbText("Crumbzz")); got == hide {
 				t.Errorf("hide=%v status=%q: crumb present = %v", hide, status, got)
 			}
 			// The content's bottom border sits directly above whatever
@@ -656,7 +657,7 @@ func TestRender_HeaderHiddenContentStartsAtTop(t *testing.T) {
 					t.Errorf("hide=%v crumbs=%v: %s present = %v", hide, crumbs, s, got)
 				}
 			}
-			if got := strings.Contains(out, "Crumbzz"); got == crumbs {
+			if got := strings.Contains(out, CrumbText("Crumbzz")); got == crumbs {
 				t.Errorf("hide=%v crumbs=%v: crumb present = %v", hide, crumbs, got)
 			}
 			// With the header hidden the content's top border is row 0;
@@ -675,6 +676,29 @@ func TestRender_HeaderHiddenContentStartsAtTop(t *testing.T) {
 			if row := lines[h-1-below]; !strings.Contains(row, "╰") {
 				t.Errorf("hide=%v crumbs=%v: row %d = %q; want the content's bottom border", hide, crumbs, h-1-below, row)
 			}
+		}
+	}
+}
+
+// TestCrumbsLookLikeK9s pins k9s's footer: "<name>" pills, lowercased with
+// spaces removed, black on aqua for the trail and black on orange for the
+// current view, a single space between them.
+func TestCrumbsLookLikeK9s(t *testing.T) {
+	c := New(Config{Theme: theme.Default()})
+	out := c.renderFooter([]Crumb{{Label: "Pods"}, {Label: "Port Forwards"}, {Label: "Logs", Leaf: true}}, 80)
+	if got := strings.TrimSpace(strings.Split(ansi.Strip(out), "\n")[0]); got != "<pods>   <portforwards>   <logs>" {
+		t.Errorf("crumbs read %q", got)
+	}
+	pill := func(bg color.Color, text string) string {
+		return lipgloss.NewStyle().Foreground(c.Theme.BreadcrumbFg).Background(bg).Bold(true).Padding(0, 1).Render(text)
+	}
+	for _, want := range []string{
+		pill(c.Theme.BreadcrumbBg, "<pods>"),
+		pill(c.Theme.BreadcrumbBg, "<portforwards>"),
+		pill(c.Theme.BreadcrumbActive, "<logs>"),
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("footer lacks the pill %q", ansi.Strip(want))
 		}
 	}
 }

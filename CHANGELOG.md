@@ -8,6 +8,14 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Changed
+
+- Breadcrumbs are drawn as k9s draws them: a bold `<name>` pill per level,
+  lowercased with spaces removed, black on aqua for the trail and black on
+  orange for the current view, one space apart. The theme gains
+  `BreadcrumbFg` and `BreadcrumbActive`; `BreadcrumbBg` now defaults to aqua.
+  `chrome.CrumbText` gives a label as the footer shows it. (#48)
+
 ## [0.0.9] - 2026-10-01
 
 ### Added
