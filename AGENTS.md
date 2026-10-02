@@ -44,8 +44,8 @@ Six composable packages under one module, all rooted on `theme`. Apps import whi
 | Package | Role |
 |---|---|
 | `theme/` | Color palette + lipgloss styles + the `Theme` struct apps inject at construction (the DI seed every other package reads from). |
-| `chrome/` | The visual frame: top section, bordered content, footer, filter / command / confirm bars, `Modal` (centered popup), `Prompt` (one-shot prefilled text input), the `VersionLine` info row, and the help overlay. |
-| `table/` | Themed `bubbles/v2/table` styles, the `FixSelectedRow` ANSI fix, a `RowFilter`, a `Sorter` (shift+←/→ sort column, stable sort, header indicator), and `Marks` (space / ctrl+space / ctrl+\ row marks keyed to survive re-sorts). |
+| `chrome/` | The visual frame: top section, bordered content, footer, filter / command / confirm bars, `Modal` (centered popup), `Prompt` (one-shot prefilled text input), the `VersionLine` info row, the help overlay, and `SaveDump` (ctrl+s: write a view to a plain-text file). |
+| `table/` | Themed `bubbles/v2/table` styles, the `FixSelectedRow` ANSI fix, a `RowFilter`, a `Sorter` (shift+←/→ sort column, stable sort, header indicator), `Marks` (space / ctrl+space / ctrl+\ row marks keyed to survive re-sorts), and `PlainText` (every row as aligned text, for saving). |
 | `tail/` | Viewport + follow-mode + `RowFilter` for log streams. |
 | `loading/` | Spinner + rotating-tip loading / transition screen. |
 | `viewfsm/` | The `Router` over `ViewID` constants: drill stack, digit hotkeys, breadcrumbs, plus the `TranslateNavKey` helper. **No `View` interface** — apps own their view models. |
