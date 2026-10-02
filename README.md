@@ -109,7 +109,7 @@ never taller than `TopSectionRows()`, and the header always occupies exactly
 ## Releases
 
 This repo has **no goreleaser** — a release *is* a git tag, and consumers pick
-it up with `go get github.com/blairham/tuikit@vX.Y.Z`. Newest tag: **v0.0.10**.
+it up with `go get github.com/blairham/tuikit@vX.Y.Z`. Newest tag: **v0.0.11**.
 Read [`.claude/commands/release-tag.md`](.claude/commands/release-tag.md) for
 the procedure before cutting `v0.0.1` — it covers the clean-tree and green-check
 gates, the CHANGELOG move out of `[Unreleased]`, and the confirm-before-push
