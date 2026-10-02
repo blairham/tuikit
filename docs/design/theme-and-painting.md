@@ -119,3 +119,26 @@ it on `Theme.PaintBackground` — an ungated background breaks the
 `theme.Theme` (like `chrome.Frame`) carries a `//nolint:govet` for
 fieldalignment: readability of a public API struct wins over byte
 alignment. Do not reorder these structs to satisfy `fieldalignment`.
+
+## Skins and inversion (#62)
+
+A skin is k9s's: `theme.Skin` mirrors the schema under a skin file's
+`k9s:` key, field for field, with k9s's yaml tag names, so an app decodes a
+stock k9s skin straight into it. tuikit itself reads no files and imports
+no YAML library — the app owns where skins live and how they are chosen.
+
+`Theme.WithSkin` maps the keys tuikit draws with onto the theme and leaves
+everything else as it was. The keys with no counterpart in tuikit's chrome
+(`body.fgColor`, dialogs, xray, charts, most status colors) are accepted
+and ignored rather than rejected, so a skin written for k9s never fails to
+load here. A few k9s colors had no theme field — the menu's keys and text,
+the table's text and header, the log text — and got optional fields that
+fall back to the color drawn before, so adding them changed no existing
+look.
+
+`Theme.Inverted` is k9s's `--invert`: each color's OkLch lightness becomes
+`1 - L`, its hue is kept, and its chroma too — at least half of it, moving
+the lightness toward the middle where the gamut is too narrow, all of it
+where the gamut allows. Grays invert to grays; the terminal's default
+color is left alone. Every color field is inverted by reflection, so a
+field added later cannot be missed (`TestInvertedCoversEveryColor`).

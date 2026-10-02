@@ -8,6 +8,20 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- k9s skins. `theme.Skin` is k9s's skin schema with yaml tags, so an app
+  unmarshals a stock k9s skin file into it; `Theme.WithSkin` applies its
+  colors and rebuilds the styles, naming the key of any unreadable color.
+  `theme.ParseColor` reads a skin color: a CSS name, `#rrggbb` / `#rgb`, or
+  `default`, which for the body background stops the theme painting it. (#62)
+- `Theme.Inverted` and `theme.InvertColor`: k9s's `--invert`, lightness
+  flipped in OkLch with the hue and as much chroma as the sRGB gamut
+  allows kept. (#62)
+- Optional theme colors a skin sets — `MenuKey`, `MenuNumKey`, `MenuText`,
+  `TableText`, `TableHeader`, `LogText` — each falling back to the color
+  used before it existed, so a theme that sets none draws as before. (#62)
+
 ## [0.0.13] - 2026-10-02
 
 ### Changed

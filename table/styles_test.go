@@ -6,6 +6,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/blairham/tuikit/theme"
@@ -186,5 +187,21 @@ func TestFixSelectedRow_FullStillPaintsNonSelected(t *testing.T) {
 	}
 	if !strings.Contains(got, blackBgMarker) {
 		t.Errorf("non-selected line under PaintModeFull should reapply the black bg; got %q", got)
+	}
+}
+
+// TestStylesUseTheSkinsTableColors: a theme's TableText and TableHeader
+// color the cells and header; unset, they are the colors used before.
+func TestStylesUseTheSkinsTableColors(t *testing.T) {
+	th := theme.Default()
+	th.TableText = lipgloss.Color("#f8f8f2")
+	th.TableHeader = lipgloss.Color("#f1fa8c")
+	s := Styles(th)
+	if s.Cell.GetForeground() != th.TableText || s.Header.GetForeground() != th.TableHeader {
+		t.Errorf("cell %v header %v, want the skin's", s.Cell.GetForeground(), s.Header.GetForeground())
+	}
+	d := Styles(theme.Default())
+	if d.Cell.GetForeground() != theme.Default().Selection || d.Header.GetForeground() != theme.Default().Value {
+		t.Error("unset table colors changed the default look")
 	}
 }

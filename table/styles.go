@@ -39,11 +39,11 @@ func Styles(t theme.Theme) table.Styles {
 	s := table.DefaultStyles()
 
 	header := lipgloss.NewStyle().
-		Foreground(t.Value).
+		Foreground(t.TableHeaderColor()).
 		Bold(true).
 		Padding(0, 1)
 	cell := lipgloss.NewStyle().
-		Foreground(t.Selection).
+		Foreground(t.TableTextColor()).
 		Padding(0, 1)
 
 	if t.PaintBackground {
