@@ -2,5 +2,6 @@
 // [bubbles/v2/table], plus the [FixSelectedRow] ANSI post-processor
 // that solves bubbles-table's selection-paint bug, a [RowFilter]
 // type for regex-based row filtering with negation and literal fallback,
-// and a [Sorter] that owns a table's sort column and direction.
+// a [Sorter] that owns a table's sort column and direction, and [Marks]
+// for rows marked for a bulk action.
 package table

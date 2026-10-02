@@ -48,6 +48,7 @@ func TestDefault_PrebuiltStylesPopulated(t *testing.T) {
 		"Footer":       theme.Footer.Render("breadcrumb"),
 		"FilterStyle":  theme.FilterStyle.Render("/"),
 		"PromptStyle":  theme.PromptStyle.Render("active"),
+		"MarkStyle":    theme.MarkStyle.Render("pod-1"),
 	}
 	for name, rendered := range cases {
 		if rendered == "" {

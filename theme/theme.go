@@ -62,6 +62,7 @@ type Theme struct {
 	InputText     color.Color // text typed into the command and filter bars (k9s: cadetblue)
 	Suggestion    color.Color // inline completion after the typed text (k9s: dodgerblue)
 	Selection     color.Color // selected row bg (e.g. light sky blue)
+	Mark          color.Color // marked-row text (k9s: palegreen)
 	// Breadcrumb pills, k9s's frame.crumbs: black on aqua for the trail,
 	// black on orange for the current view.
 	BreadcrumbBg     color.Color // pill bg for the trail (k9s: aqua)
@@ -94,6 +95,7 @@ type Theme struct {
 	Footer       lipgloss.Style
 	FilterStyle  lipgloss.Style
 	PromptStyle  lipgloss.Style
+	MarkStyle    lipgloss.Style // rows marked for a bulk action
 	TableBorder  lipgloss.Style
 
 	// PaintBackground controls whether tuikit paints Bg on every styled
@@ -157,6 +159,7 @@ func Default() Theme {
 		InputText:        lipgloss.Color("#5F9EA0"), // CadetBlue (k9s prompt text)
 		Suggestion:       lipgloss.Color("#1E90FF"), // DodgerBlue (k9s prompt suggestion)
 		Selection:        lipgloss.Color("#87CEFA"), // LightSkyBlue
+		Mark:             lipgloss.Color("#98FB98"), // PaleGreen (k9s table markColor)
 		BreadcrumbBg:     lipgloss.Color("#00FFFF"), // Aqua (k9s crumbs bgColor)
 		BreadcrumbFg:     lipgloss.Color("#000000"), // Black (k9s crumbs fgColor)
 		BreadcrumbActive: lipgloss.Color("#FFA500"), // Orange (k9s crumbs activeColor)
@@ -217,6 +220,7 @@ func (t *Theme) populateStyles() {
 	t.MutedStyle = t.On(t.Muted)
 	t.Footer = t.On(t.Muted)
 	t.FilterStyle = t.On(t.Filter).Bold(true)
+	t.MarkStyle = t.On(t.Mark)
 	t.PromptStyle = lipgloss.NewStyle().
 		Background(t.Prompt).
 		Foreground(t.PromptText).
