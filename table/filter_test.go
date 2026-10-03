@@ -133,7 +133,7 @@ func TestRowFilter_Fuzzy(t *testing.T) {
 
 func TestRowFilter_Labels(t *testing.T) {
 	t.Parallel()
-	labels := map[string]string{"app": "web", "tier": "front", "empty": ""}
+	labels := map[string]string{"app": "web", "tier": "front", "empty": "", "eq": "a=b"}
 	tests := []struct {
 		filter string
 		want   bool
@@ -163,6 +163,7 @@ func TestRowFilter_Labels(t *testing.T) {
 		{"-l app=web,,", true},  // empty terms skipped
 		{"-l ,", true},          // no terms: empty filter
 		{"-l app=web=x", false}, // value is "web=x"
+		{"-l eq=a=b", true},     // only the first "=" is the operator
 		// Malformed: the whole filter matches nothing.
 		{"-l =web", false},
 		{"-l !", false},
