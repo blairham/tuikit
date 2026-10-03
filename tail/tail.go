@@ -5,7 +5,7 @@ package tail
 
 import (
 	"image/color"
-	"strings"
+	"regexp"
 
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
@@ -15,7 +15,9 @@ import (
 )
 
 // Model wraps a bubbles viewport with a line buffer, a follow toggle,
-// and a live filter (via [table.RowFilter]): a regex, fuzzy or label filter.
+// a live filter (via [table.RowFilter]): a regex, fuzzy or label filter,
+// and a search that highlights matches without hiding anything
+// ([Model.SetSearch]).
 //
 // Apps feed lines in via [Model.AppendLine] as they arrive (e.g. from a
 // background goroutine reading from a log shipper). The viewport
@@ -24,15 +26,22 @@ import (
 // off restores everything. Markers ([Model.AppendMarker]) pass every
 // filter.
 type Model struct {
-	filter   table.RowFilter
-	bgSeq    string
-	lines    []line
-	visible  []string
-	viewport viewport.Model
-	ready    bool
-	follow   bool
-	wrap     bool
-	maxLines int
+	filter     table.RowFilter
+	search     *regexp.Regexp
+	searchExpr string
+	matchOn    string // SGR that opens a match's highlight
+	currentOn  string // SGR that opens a highlight on the current match's line
+	bgSeq      string
+	lines      []line
+	visible    []string
+	matches    []match
+	viewport   viewport.Model
+	current    int // index into matches; -1 for none
+	curBuf     int // index into lines of the current match; -1 for none
+	maxLines   int
+	ready      bool
+	follow     bool
+	wrap       bool
 }
 
 // line is one buffered line. A marker shows whatever the filter.
@@ -43,7 +52,10 @@ type line struct {
 
 // New constructs an empty tail model with follow=true.
 func New() *Model {
-	return &Model{follow: true}
+	m := &Model{follow: true, current: -1, curBuf: -1}
+	t := theme.Default()
+	m.SetSearchStyles(t.SearchMatch, t.SearchCurrent)
+	return m
 }
 
 // SetBackground makes [Model.View] paint the given background continuously
@@ -69,7 +81,7 @@ func (m *Model) Resize(width, height int) {
 		m.viewport.SetWidth(width)
 		m.viewport.SetHeight(height)
 	}
-	m.viewport.SetContent(strings.Join(m.visible, "\n"))
+	m.viewport.SetContent(m.content())
 	if m.follow {
 		m.viewport.GotoBottom()
 	}
@@ -99,7 +111,7 @@ func (m *Model) SetWrap(on bool) {
 	m.wrap = on
 	if m.ready {
 		m.viewport.SoftWrap = on
-		m.viewport.SetContent(strings.Join(m.visible, "\n"))
+		m.viewport.SetContent(m.content())
 		if m.follow {
 			m.viewport.GotoBottom()
 		}
@@ -111,6 +123,8 @@ func (m *Model) SetWrap(on bool) {
 func (m *Model) Clear() {
 	m.lines = m.lines[:0]
 	m.visible = m.visible[:0]
+	m.curBuf = -1
+	m.rematch()
 	if m.ready {
 		m.viewport.SetContent("")
 		m.viewport.GotoTop()
@@ -137,8 +151,9 @@ func (m *Model) VisibleCount() int { return len(m.visible) }
 func (m *Model) SetFilter(expr string) {
 	m.filter = table.ParseFilter(expr)
 	m.rebuildVisible()
+	m.rematch()
 	if m.ready {
-		m.viewport.SetContent(strings.Join(m.visible, "\n"))
+		m.viewport.SetContent(m.content())
 		if m.follow {
 			m.viewport.GotoBottom()
 		}
@@ -197,6 +212,7 @@ func (m *Model) trim() int {
 			dropped++
 		}
 	}
+	m.curBuf -= drop // below 0 (dropped) is no current match, as -1 is
 	// Copied rather than re-sliced, so the dropped lines' memory goes too.
 	m.lines = append([]line(nil), m.lines[drop:]...)
 	m.visible = append([]string(nil), m.visible[dropped:]...)
@@ -206,11 +222,12 @@ func (m *Model) trim() int {
 // refresh redraws after a change that removed dropped visible lines from
 // the top: pinned to the bottom when following, else moved up by them.
 func (m *Model) refresh(dropped int) {
+	m.rematch()
 	if !m.ready {
 		return
 	}
 	offset := m.viewport.YOffset()
-	m.viewport.SetContent(strings.Join(m.visible, "\n"))
+	m.viewport.SetContent(m.content())
 	if m.follow {
 		m.viewport.GotoBottom()
 	} else {
@@ -242,11 +259,12 @@ func (m *Model) ReplaceLines(lines []string) {
 	}
 	m.rebuildVisible()
 	m.trim()
+	m.rematch()
 	if !m.ready {
 		return
 	}
 	offset := m.viewport.YOffset()
-	m.viewport.SetContent(strings.Join(m.visible, "\n"))
+	m.viewport.SetContent(m.content())
 	if m.follow {
 		m.viewport.GotoBottom()
 	} else {
@@ -285,6 +303,9 @@ func (m *Model) PrependLines(lines []string) {
 		older = append(older, line{text: text})
 	}
 	m.lines = append(older, m.lines...)
+	if m.curBuf >= 0 {
+		m.curBuf += len(lines)
+	}
 
 	// Count how many prepended lines pass the filter, so the offset shifts by
 	// exactly the number of rows inserted above the current view.
@@ -302,11 +323,12 @@ func (m *Model) PrependLines(lines []string) {
 	// Into a full buffer the newest lines are kept, so what does not fit is
 	// the history just prepended.
 	added -= m.trim()
+	m.rematch()
 	if !m.ready {
 		return
 	}
 	offset := m.viewport.YOffset()
-	m.viewport.SetContent(strings.Join(m.visible, "\n"))
+	m.viewport.SetContent(m.content())
 	if m.follow {
 		m.viewport.GotoBottom()
 	} else {

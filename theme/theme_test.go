@@ -41,17 +41,19 @@ func TestDefault_PrebuiltStylesPopulated(t *testing.T) {
 	// Spot-check that styles render without producing empty strings,
 	// which would indicate a missing color assignment.
 	cases := map[string]string{
-		"InfoLabel":    theme.InfoLabel.Render("Env:"),
-		"InfoValue":    theme.InfoValue.Render("prd"),
-		"ShortcutKey":  theme.ShortcutKey.Render("<enter>"),
-		"ShortcutDesc": theme.ShortcutDesc.Render("Tail"),
-		"LogoStyle":    theme.LogoStyle.Render("X"),
-		"Title":        theme.Title.Render("title"),
-		"Error":        theme.Error.Render("oops"),
-		"Footer":       theme.Footer.Render("breadcrumb"),
-		"FilterStyle":  theme.FilterStyle.Render("/"),
-		"PromptStyle":  theme.PromptStyle.Render("active"),
-		"MarkStyle":    theme.MarkStyle.Render("pod-1"),
+		"InfoLabel":     theme.InfoLabel.Render("Env:"),
+		"InfoValue":     theme.InfoValue.Render("prd"),
+		"ShortcutKey":   theme.ShortcutKey.Render("<enter>"),
+		"ShortcutDesc":  theme.ShortcutDesc.Render("Tail"),
+		"LogoStyle":     theme.LogoStyle.Render("X"),
+		"Title":         theme.Title.Render("title"),
+		"Error":         theme.Error.Render("oops"),
+		"Footer":        theme.Footer.Render("breadcrumb"),
+		"FilterStyle":   theme.FilterStyle.Render("/"),
+		"PromptStyle":   theme.PromptStyle.Render("active"),
+		"MarkStyle":     theme.MarkStyle.Render("pod-1"),
+		"SearchMatch":   theme.SearchMatch.Render("hit"),
+		"SearchCurrent": theme.SearchCurrent.Render("hit"),
 	}
 	for name, rendered := range cases {
 		if rendered == "" {

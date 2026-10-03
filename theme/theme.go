@@ -111,6 +111,13 @@ type Theme struct {
 	PromptStyle  lipgloss.Style
 	MarkStyle    lipgloss.Style // rows marked for a bulk action
 	TableBorder  lipgloss.Style
+	// Search highlights, for tail's search (tail.Model.SetSearchStyles).
+	// SearchMatch marks every match: reverse video, so a match keeps the
+	// color its text had, turned inside out. SearchCurrent marks the
+	// matches on the current match's line, in the prompt pill's colors so
+	// it stands apart. Only their colors and attributes are used.
+	SearchMatch   lipgloss.Style
+	SearchCurrent lipgloss.Style
 
 	// PaintBackground controls whether tuikit paints Bg on every styled
 	// span (true) or only the outer screen wrapper (false). See the
@@ -256,6 +263,11 @@ func (t *Theme) populateStyles() {
 		Foreground(t.PromptText).
 		Bold(true).
 		Padding(0, 1)
+	t.SearchMatch = lipgloss.NewStyle().Reverse(true)
+	t.SearchCurrent = lipgloss.NewStyle().
+		Background(t.Prompt).
+		Foreground(t.PromptText).
+		Bold(true)
 	t.TableBorder = lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(t.FocusBorder())
