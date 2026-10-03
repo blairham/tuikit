@@ -6,6 +6,7 @@ package table
 import (
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 // RowFilter is a compiled, optionally negated case-insensitive regex
@@ -14,7 +15,10 @@ import (
 //
 // Invalid regex syntax falls back to a literal substring match (with
 // the input quoted via [regexp.QuoteMeta]), so users can type "$" or
-// "[" without crashing the filter.
+// "[" without crashing the filter. Bytes that are not valid UTF-8 become
+// U+FFFD first: the regexp package rejects them in a pattern, and reads
+// them as U+FFFD in the text it matches, so a filter pasted from a field
+// with a stray byte still matches that field.
 type RowFilter struct {
 	re     *regexp.Regexp
 	negate bool
@@ -33,6 +37,7 @@ func ParseFilter(s string) RowFilter {
 	if s == "" {
 		return RowFilter{}
 	}
+	s = strings.ToValidUTF8(s, string(utf8.RuneError))
 	re, err := regexp.Compile("(?i)" + s)
 	if err != nil {
 		re = regexp.MustCompile("(?i)" + regexp.QuoteMeta(s))
