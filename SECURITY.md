@@ -15,7 +15,10 @@ app's process, with your app's privileges. It adds none of its own.
   through unchanged.
 - The filter bar's text (`table.ParseFilter`, `tail.Model.SetFilter`) is
   compiled as a case-insensitive Go regular expression, which runs in linear
-  time, and falls back to a literal match when it does not compile.
+  time, and falls back to a literal match when it does not compile. The
+  `-f` (fuzzy) and `-l` (label selector) forms compile nothing: a fuzzy
+  match is one linear pass over each field, and a malformed selector
+  matches nothing rather than failing.
 - `chrome.SaveDump` writes a new file, mode `0600`, inside the directory the
   app passes. The name is reduced to `[a-z0-9._-]`, and an existing file is
   never overwritten.

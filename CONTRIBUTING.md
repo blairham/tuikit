@@ -51,6 +51,11 @@ decide a review:
 
 ## Tests
 
+**New functionality comes with tests in the same pull request, and a bug fix
+comes with a test that fails without the fix.** A PR that adds an exported
+function, option or key binding without a test that exercises it is not
+ready to merge.
+
 - Render and assert. Strip ANSI when the text is the point; assert on the
   raw sequences when the bytes are.
 - Tests must never touch real user state — use `t.TempDir()` and
