@@ -39,3 +39,23 @@ func TestRowFilter_MatchesAny(t *testing.T) {
 		}
 	}
 }
+
+func TestParseFilterInvalidUTF8(t *testing.T) {
+	t.Parallel()
+	// Each used to panic inside the literal fallback's MustCompile.
+	for _, expr := range []string{"\xff", "!\xd6", "a\x99b", "[\xff"} {
+		f := ParseFilter(expr)
+		if f.Empty() {
+			t.Fatalf("ParseFilter(%q) is empty", expr)
+		}
+	}
+	// A stray byte in the filter matches the same stray byte in a field,
+	// and nothing else.
+	f := ParseFilter("pod-\xff")
+	if !f.MatchesAny("pod-\xff-1") {
+		t.Error(`"pod-\xff" does not match the field it came from`)
+	}
+	if f.MatchesAny("pod-a") {
+		t.Error(`"pod-\xff" matches "pod-a"`)
+	}
+}

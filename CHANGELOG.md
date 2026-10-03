@@ -8,6 +8,12 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Fixed
+
+- `table.ParseFilter` (and so `tail.Model.SetFilter`) no longer panics on
+  an expression that is not valid UTF-8; the stray bytes become U+FFFD,
+  which matches the same bytes in a field. (#74)
+
 ## [0.0.17] - 2026-10-02
 
 ### Added
