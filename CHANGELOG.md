@@ -8,6 +8,47 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.19] - 2026-10-03
+
+### Added
+
+- `tail`: search beside the filter, as in k9s's describe view. `SetSearch`
+  highlights matches in the lines the filter shows without hiding any — it
+  is matched against the ANSI-stripped text and woven into lines that
+  already carry SGR color without disturbing it. `NextMatch` / `PrevMatch`
+  step between matching lines with wraparound, scrolling them into view
+  (wrapped rows included) and pausing follow. `Matches` / `MatchIndex` give
+  a "3/17" counter, and the current match stays on its line through
+  appends, prepends, `ReplaceLines`, trims and filter changes.
+  `SetSearchStyles` takes the highlight styles. (#85)
+- `theme`: `SearchMatch` (reverse video) and `SearchCurrent` (the prompt
+  pill's colors, bold) styles for the search highlight. (#85)
+- `table.RowFilter` understands k9s's other two filter-bar modes. `-f term`
+  is a fuzzy match: the term's characters must appear in a field in order,
+  case-insensitively. `-l selector` is a label selector over a row's
+  labels: comma-separated `k=v`, `k==v`, `k!=v` (differs or absent), `k`
+  (exists) and `!k` (absent) terms, ANDed; a malformed term makes the
+  filter match nothing. The new `Match(fields, labels)` covers all three
+  modes, and `Kind()` reports which one is active. `MatchesAny` does fuzzy
+  too, and matches nothing for a label filter, which needs labels — so in
+  `tail.Model` a label filter shows only markers. The plain regex form,
+  with `!` negation and its literal fallback, is unchanged. (#84)
+- `chrome`: `CommandBar` and `FilterBar` keep an input history. Up/down
+  recall earlier submitted values (enter, not esc), and down past the
+  newest restores what was being typed; consecutive duplicates and empty
+  values are skipped, and the newest `chrome.HistoryLimit` (50) are kept.
+  `History()` / `SetHistory()` let apps persist and seed it. The filter bar
+  re-runs `OnFilter` on each recall. (#82)
+
+### Changed
+
+- `chrome.CommandBar`: up/down recall history instead of cycling
+  suggestions; suggestions cycle on ctrl+n / ctrl+p, and tab and → still
+  accept one. (#82)
+- `table.ParseFilter`: an expression that starts with `-f ` or `-l ` (or is
+  exactly `-f` or `-l`) now selects the fuzzy or label mode instead of being
+  a regex. `-foo` and other expressions are unchanged. (#84)
+
 ## [0.0.18] - 2026-10-03
 
 ### Fixed
