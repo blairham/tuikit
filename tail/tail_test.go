@@ -333,3 +333,26 @@ func TestReplaceLinesKeepsThePlace(t *testing.T) {
 		t.Errorf("a following view left the bottom: %q", last)
 	}
 }
+
+func TestSetFilterModes(t *testing.T) {
+	m := New()
+	m.AppendLines([]string{"error: disk full", "info: started", "ERR: timeout"})
+	m.AppendMarker("── mark ──")
+
+	m.SetFilter("-f err")
+	if got := strings.Join(m.VisibleLines(), "|"); got != "error: disk full|ERR: timeout|── mark ──" {
+		t.Errorf("fuzzy: %q", got)
+	}
+	m.SetFilter("-f eds")
+	if got := strings.Join(m.VisibleLines(), "|"); got != "error: disk full|── mark ──" {
+		t.Errorf("fuzzy subsequence: %q", got)
+	}
+	// A log line has no labels, so a label filter shows only the markers,
+	// even for a selector that an unlabeled row would pass.
+	for _, expr := range []string{"-l app=web", "-l !app"} {
+		m.SetFilter(expr)
+		if got := strings.Join(m.VisibleLines(), "|"); got != "── mark ──" {
+			t.Errorf("%s: %q", expr, got)
+		}
+	}
+}

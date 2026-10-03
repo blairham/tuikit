@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package tail wraps a [bubbles/v2/viewport] with a follow toggle and a
-// live regex filter, suitable for log / event / message streams.
+// live filter, suitable for log / event / message streams.
 //
 // Apps append lines via [Model.AppendLine] as they arrive; the viewport
 // auto-scrolls when follow mode is on, the filter ([RowFilter]) hides
