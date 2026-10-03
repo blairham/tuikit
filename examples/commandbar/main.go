@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Blair Hamilton
+// SPDX-License-Identifier: Apache-2.0
+
 // Command commandbar demonstrates [chrome.CommandBar] inside a minimal
 // tuikit frame. Press `:` to open the bar, type a command, Enter to
 // dispatch, Esc to cancel. Try `:q!` or `:quit` to exit, `:hello`, or

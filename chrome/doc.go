@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Blair Hamilton
+// SPDX-License-Identifier: Apache-2.0
+
 // Package chrome renders the visual frame around a tuikit app: top
 // section (info-panel + shortcut grid + ASCII logo), bordered content
 // with an injected title, breadcrumb footer, status bar, filter and

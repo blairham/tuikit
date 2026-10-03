@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Blair Hamilton
+// SPDX-License-Identifier: Apache-2.0
+
 // Code generated from golang.org/x/image/colornames (the SVG 1.1 / CSS
 // named colors) by a one-off generator; DO NOT EDIT.
 

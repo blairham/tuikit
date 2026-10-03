@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Blair Hamilton
+// SPDX-License-Identifier: Apache-2.0
+
 // Package loading provides a k9s-style "loading…" indicator — an animated
 // spinner beside a rotating one-line tip — for use as an initial loading screen
 // or a between-views transition while data is fetched.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Blair Hamilton
+// SPDX-License-Identifier: Apache-2.0
+
 // Package viewfsm provides the [View] interface and [Router] that
 // drive a tuikit app's view stack: drill-in / pop / jump-to-view-by-key,
 // global key dispatch (/, :, ?, esc, q, 1..N, enter, r, j/k/g/G/ctrl-d/u),

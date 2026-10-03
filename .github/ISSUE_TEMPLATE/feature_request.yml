@@ -1,0 +1,16 @@
+name: Feature request
+description: Something tuikit should provide
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like to build?
+      description: The task, not the implementation. If k9s already does it, say how.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does it belong in tuikit?
+      description: Which apps need it, and what they do today instead. Something only one app needs usually belongs in that app.

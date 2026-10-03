@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Blair Hamilton
+// SPDX-License-Identifier: Apache-2.0
+
 // Package theme provides the color palette, lipgloss style helpers, and
 // the [Theme] struct that consumer apps inject at construction.
 //

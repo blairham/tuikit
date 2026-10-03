@@ -1,33 +1,87 @@
 # Contributing to tuikit
 
-Thanks for the interest. tuikit is in early `v0.0.x` development — the API is intentionally fluid while the applications that use it migrate onto it. Once the surface settles we'll tag `v0.1.0` and the API becomes more stable.
+Thanks for looking. Issues, bug reports and pull requests are all welcome.
 
-## Quick start
+tuikit is pre-stable `v0.0.x`: the API is still being shaped by the
+applications migrating onto it, and `v0.1.0` tags once it settles. Breaking
+changes can land in any release until then, so small, additive PRs are the
+easiest to take.
 
-```bash
-make check    # gofumpt + fieldalignment + golangci-lint + race tests
+## Before you open a PR
+
+```sh
+pre-commit install   # once per clone: formatting, golangci-lint, secrets, YAML, license headers
+make test            # go test -race ./...
 ```
+
+golangci-lint runs as the commit hook and in CI, not as a make target; a
+failing hook fails the commit, and you fix it and commit again. `make fmt`
+applies gofumpt and fieldalignment.
 
 ## What we want
 
-- **Bug reports** with a minimal repro Go file. The TUI surface is small; reproductions should be tractable.
-- **Cross-terminal screenshots** (macOS Terminal, iTerm2, Alacritty, kitty, Wezterm, ghostty). The `PaintBackground` knob in `theme` is load-bearing across terminals; we want to keep both modes correct.
-- **Theme contributions** — Nord, Solarized Light/Dark, mono, etc. Drop a new constructor in `theme/`.
-- **Example apps** in `examples/` showing a specific pattern (split-pane, form view, async data, etc.).
+- **Bug reports** with a minimal repro. The surface is small; reproductions
+  should be tractable.
+- **Cross-terminal screenshots** (macOS Terminal, iTerm2, Alacritty, kitty,
+  WezTerm, Ghostty). `PaintBackground` in `theme` is load-bearing across
+  terminals, and both modes have to stay correct.
+- **Themes** — a new constructor in `theme/`.
+- **Examples** in `examples/` showing one pattern each.
 
-## What we DON'T want (yet)
+## What we don't want (yet)
 
-- Major API surface additions while `v0.0.x` is unstable. File an issue first.
-- Domain-specific features that only one app needs — keep those in your own app.
-- New dependencies. The current dep tree is just Charm + image/color; we want to keep it tight.
+- Large API additions while `v0.0.x` is unstable. Open an issue first.
+- Features only one app needs — those belong in that app.
+- New dependencies. Beyond the Charm stack there are two (go-colorful and
+  yaml, for skins); a third needs a reason.
 
-## Workflow
+## The shape of a change
 
-1. Open an issue describing the change.
-2. Fork, branch from `main`, write code + tests.
-3. `make check` green locally.
-4. Open a PR with a clear "why" (the "what" is in the diff).
+[`AGENTS.md`](AGENTS.md) is the architecture guide. The rules that most often
+decide a review:
 
-## License
+- **tuikit never owns the `tea.Program` loop.** Packages hand back models,
+  styles and strings; the app drives them.
+- **Every package reads its colors from `theme.Theme`**, which the app
+  injects at construction.
+- Struct literals use **named fields**; the linter's `fieldalignment` fix
+  reorders fields.
+- Every exported change gets a line under `[Unreleased]` in
+  [`CHANGELOG.md`](CHANGELOG.md).
 
-By contributing, you agree your contributions will be licensed under the Apache-2.0 License.
+## Tests
+
+- Render and assert. Strip ANSI when the text is the point; assert on the
+  raw sequences when the bytes are.
+- Tests must never touch real user state — use `t.TempDir()` and
+  `t.Setenv`.
+- Code that takes untrusted text has a fuzz target (`go test -fuzz`) that
+  checks a property, not just the absence of a panic.
+
+## The Contributor License Agreement
+
+Contributions require a signed CLA; the text is in [`CLA.md`](CLA.md).
+
+**Why.** The project may need to offer different licensing terms in future.
+That is only possible if one party can license the whole work, and copyright
+in a contribution stays with its author unless licensed onward.
+
+The CLA does **not** take your copyright. You keep it; you grant a license
+broad enough to include sublicensing, and you affirm the work is your own —
+including that no employer holds rights to it.
+
+## Commits and PRs
+
+- Prefix the subject with the package it touches (`table:`, `tail:`,
+  `chrome:`, `docs:`, `ci:`).
+- Explain the **why** in the commit message. The diff already says what.
+- One change per PR, and put `Closes #N` in the PR body.
+- Commits must be signed.
+- Every `.go` file carries the two-line SPDX header (`Apache-2.0`); the
+  pre-commit hook fails without it.
+
+## Releasing
+
+Maintainers only. A release is a signed, annotated `vX.Y.Z` tag on `main`
+after the CHANGELOG's `[Unreleased]` section moves under it; there is no
+GoReleaser and nothing to build.
