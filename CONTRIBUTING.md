@@ -82,6 +82,8 @@ including that no employer holds rights to it.
 
 ## Releasing
 
-Maintainers only. A release is a signed, annotated `vX.Y.Z` tag on `main`
-after the CHANGELOG's `[Unreleased]` section moves under it; there is no
-GoReleaser and nothing to build.
+Maintainers only. A release is a signed, annotated `vX.Y.Z` tag on `main`,
+on the commit that moves the CHANGELOG's `[Unreleased]` section under
+`## [X.Y.Z] - <date>`. Pushing the tag runs the release workflow, which
+publishes that section as the notes, the source archive, a cosign-signed
+`checksums.txt` and build provenance. Nothing is compiled.
