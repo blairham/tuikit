@@ -15,7 +15,7 @@ import (
 )
 
 // Model wraps a bubbles viewport with a line buffer, a follow toggle,
-// and a regex filter (via [table.RowFilter]).
+// and a live filter (via [table.RowFilter]): a regex, fuzzy or label filter.
 //
 // Apps feed lines in via [Model.AppendLine] as they arrive (e.g. from a
 // background goroutine reading from a log shipper). The viewport
@@ -129,7 +129,11 @@ func (m *Model) LineCount() int { return len(m.lines) }
 // VisibleCount returns the number of filter-passing lines.
 func (m *Model) VisibleCount() int { return len(m.visible) }
 
-// SetFilter applies a new filter and rebuilds the visible buffer.
+// SetFilter applies a new filter and rebuilds the visible buffer. The
+// expression is a [table.ParseFilter] expression in any of its modes: a
+// regex, "-f term" for a fuzzy match, or "-l selector". Log lines carry no
+// labels, so a label filter hides every line but the markers; an app can
+// check [table.RowFilter.Kind] on its parsed input to explain why.
 func (m *Model) SetFilter(expr string) {
 	m.filter = table.ParseFilter(expr)
 	m.rebuildVisible()
