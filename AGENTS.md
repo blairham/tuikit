@@ -111,7 +111,7 @@ The router supports both fixed shallow drill stacks and deep stacks with detail/
 
 ### chrome.CommandBar / filter bar lifecycle
 
-`chrome.CommandBar` owns the `:` palette: `Active()`, `Update(msg, dispatch)`, render. The app forwards key messages to it when `Active()` and uses its returned `handled` bool to decide whether to fall through to other keys. See `examples/commandbar/main.go` for the canonical pattern.
+`chrome.CommandBar` owns the `:` palette: `Active()`, `Update(msg, dispatch)`, render. The app forwards key messages to it when `Active()` and uses its returned `handled` bool to decide whether to fall through to other keys. See `examples/commandbar/main.go` for the canonical pattern. Both bars keep an input history (up/down recall, `History`/`SetHistory`); because up/down are history, the command bar cycles suggestions on ctrl+n/ctrl+p only — see the design doc's *Input history* section.
 
 ## Code Conventions
 

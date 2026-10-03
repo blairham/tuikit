@@ -19,10 +19,15 @@ import (
 //
 // Apps wire [FilterBar.Input] into [Frame.Filter] when the bar is
 // active.
+//
+// The bar remembers committed filters: up recalls older ones and down
+// newer ones, k9s-style (see [FilterBar.Update] and
+// [FilterBar.History]).
 type FilterBar struct {
-	theme  theme.Theme
-	input  textinput.Model
-	active bool
+	theme   theme.Theme
+	input   textinput.Model
+	history inputHistory
+	active  bool
 }
 
 // FilterBarOpts customizes a FilterBar at construction. The zero
@@ -67,7 +72,7 @@ func NewFilterBar(t theme.Theme, opts FilterBarOpts) *FilterBar {
 		in.CharLimit = opts.CharLimit
 	}
 	in.SetStyles(filterBarStyles(in.Styles(), t))
-	return &FilterBar{theme: t, input: in}
+	return &FilterBar{theme: t, input: in, history: newInputHistory()}
 }
 
 // Active reports whether the bar is currently open.
@@ -78,6 +83,7 @@ func (f *FilterBar) Active() bool { return f.active }
 // filter on each open should call [FilterBar.OpenWith]("") instead.
 func (f *FilterBar) Open() tea.Cmd {
 	f.active = true
+	f.history.reset()
 	return f.input.Focus()
 }
 
@@ -85,6 +91,7 @@ func (f *FilterBar) Open() tea.Cmd {
 // at the end.
 func (f *FilterBar) OpenWith(value string) tea.Cmd {
 	f.active = true
+	f.history.reset()
 	f.input.SetValue(value)
 	f.input.CursorEnd()
 	return f.input.Focus()
@@ -121,6 +128,17 @@ func (f *FilterBar) SetValue(v string) {
 // into [Frame.Filter] for rendering.
 func (f *FilterBar) Input() *textinput.Model { return &f.input }
 
+// History returns a copy of the committed filters, oldest first, so
+// apps can persist them.
+func (f *FilterBar) History() []string { return f.history.snapshot() }
+
+// SetHistory replaces the remembered filters, oldest first — for
+// seeding from saved state at startup. The recording rules apply:
+// empty values are skipped, a value equal to the one before it is
+// dropped, and only the newest [HistoryLimit] are kept. The slice is
+// copied. Any recall in progress ends.
+func (f *FilterBar) SetHistory(entries []string) { f.history.set(entries) }
+
 // Update forwards msg to the textinput while the bar is active.
 //
 // Behavior on tea.KeyMsg when active:
@@ -128,10 +146,19 @@ func (f *FilterBar) Input() *textinput.Model { return &f.input }
 //   - "esc": clears the value, closes the bar, invokes
 //     onFilter("") so the view drops the filter.
 //   - "enter": closes the bar but keeps the value (filter stays
-//     applied). onFilter is NOT invoked again — it's already been
-//     called for the latest value on the previous keystroke.
+//     applied), and records a non-empty value in the history. onFilter
+//     is NOT invoked again — it's already been called for the latest
+//     value on the previous keystroke. Esc records nothing.
+//   - "up" / "down": recall older / newer history entries into the
+//     input, cursor at the end, and invoke onFilter with the recalled
+//     value so the view re-filters live. Down past the newest restores
+//     what was typed before recall began. Recalled text edits like
+//     typed text. With nothing to recall the key is consumed and
+//     onFilter is not invoked.
 //   - any other key: forwarded to the textinput; onFilter is invoked
 //     with the new value so the view re-filters live.
+//
+// Opening, committing and canceling all end any recall in progress.
 //
 // Non-KeyMsg messages are forwarded to the textinput but reported as
 // handled=false so the app's outer router still sees them.
@@ -151,7 +178,13 @@ func (f *FilterBar) Update(msg tea.Msg, onFilter OnFilter) (handled bool, cmd te
 			}
 			return true, nil
 		case keyStrEnter:
+			f.history.add(f.input.Value())
 			f.Close()
+			return true, nil
+		case keyStrUp, keyStrDown:
+			if changed := f.history.recall(&f.input, key.String()); changed && onFilter != nil {
+				onFilter(f.input.Value())
+			}
 			return true, nil
 		}
 		f.input, cmd = f.input.Update(msg)

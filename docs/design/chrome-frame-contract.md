@@ -153,6 +153,35 @@ router still sees them. The `Dispatch` callback decides the outcome of
 closes the bar. The filter bar follows the same active/forward/render
 shape. `examples/commandbar/main.go` is the canonical wiring.
 
+### Input history
+
+Both bars remember what the user submits — `enter` with a non-empty
+value; `esc` records nothing. The command bar records even when
+`Dispatch` returns an error, so a mistyped command can be recalled and
+fixed. Entries are oldest first, a value equal to the newest entry is
+not added again, and only the newest `chrome.HistoryLimit` (50) are
+kept.
+
+While a bar is active, `up` recalls older entries and `down` newer ones,
+with the cursor at the end; stepping down past the newest restores the
+draft — whatever was in the input when recall began. Recalled text edits
+like typed text. `Open` / `OpenWith` start each recall from the newest
+entry, as does a submit that keeps the command bar open. The filter bar
+calls `OnFilter` with each recalled value, so the view re-filters live.
+
+Up/down mean history in both bars, as in k9s. That takes them from
+bubbles' `textinput`, whose default keymap cycles suggestions on
+up/down *and* ctrl+n/ctrl+p. The bars' `Update` consumes up/down before
+the textinput sees them, so suggestions cycle on ctrl+n/ctrl+p only.
+`tab`, and `→` at the end of the value, still accept the current
+suggestion. An app that drives `Input().Update` directly bypasses this
+and gets textinput's own keymap; `Input()` is for rendering.
+
+`History()` returns a copy and `SetHistory([]string)` replaces the
+entries under the same recording rules, so apps can persist history
+across runs and seed it at startup. tuikit does no persistence itself.
+`chrome.Prompt` (a one-shot prefilled input) has no history.
+
 The bar handles a single mode — a `:` palette with optional suggestions.
 Modal variants (y/n confirms via `chrome.Confirm`, save-as prompts,
 in-place value edits) are intentionally separate sibling widgets, not
