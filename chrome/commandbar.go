@@ -19,6 +19,12 @@ import (
 // messages via [CommandBar.Update], and pass [CommandBar.Input] to
 // [Frame.Command] when [CommandBar.Active] is true.
 //
+// The bar remembers submitted commands: up recalls older ones and down
+// newer ones, k9s-style (see [CommandBar.Update] and
+// [CommandBar.History]). Because up/down mean history, suggestion
+// cycling sits on ctrl+n / ctrl+p only, not on textinput's default
+// up/down; tab and → (at the end of the value) accept a suggestion.
+//
 // The bar handles a single mode — a `:` palette with optional
 // suggestions. Modal variants (y/n confirms, save-as prompts,
 // in-place value edits) are intentionally out of scope; build them as
@@ -28,6 +34,7 @@ type CommandBar struct {
 	theme     theme.Theme
 	err       string
 	input     textinput.Model
+	history   inputHistory
 	active    bool
 }
 
@@ -66,6 +73,7 @@ func NewCommandBar(t theme.Theme, opts CommandBarOpts) *CommandBar {
 		prompt = ":"
 	}
 	in := textinput.New()
+	in.KeyMap = historyKeyMap()
 	in.Prompt = prompt + " "
 	in.Placeholder = opts.Placeholder
 	if opts.Width > 0 {
@@ -85,6 +93,7 @@ func NewCommandBar(t theme.Theme, opts CommandBarOpts) *CommandBar {
 		theme:     t,
 		input:     in,
 		suggestFn: opts.SuggestFn,
+		history:   newInputHistory(),
 	}
 }
 
@@ -96,6 +105,7 @@ func (c *CommandBar) Active() bool { return c.active }
 func (c *CommandBar) Open() tea.Cmd {
 	c.active = true
 	c.err = ""
+	c.history.reset()
 	c.input.SetValue("")
 	if c.suggestFn != nil {
 		c.input.SetSuggestions(c.suggestFn(""))
@@ -108,6 +118,7 @@ func (c *CommandBar) Open() tea.Cmd {
 func (c *CommandBar) OpenWith(value string) tea.Cmd {
 	c.active = true
 	c.err = ""
+	c.history.reset()
 	c.input.SetValue(value)
 	c.input.CursorEnd()
 	if c.suggestFn != nil {
@@ -147,16 +158,38 @@ func (c *CommandBar) SetSuggestions(suggestions []string) {
 // into [Frame.Command] for rendering.
 func (c *CommandBar) Input() *textinput.Model { return &c.input }
 
+// History returns a copy of the submitted commands, oldest first, so
+// apps can persist them.
+func (c *CommandBar) History() []string { return c.history.snapshot() }
+
+// SetHistory replaces the remembered commands, oldest first — for
+// seeding from saved state at startup. The recording rules apply:
+// empty values are skipped, a value equal to the one before it is
+// dropped, and only the newest [HistoryLimit] are kept. The slice is
+// copied. Any recall in progress ends.
+func (c *CommandBar) SetHistory(entries []string) { c.history.set(entries) }
+
 // Update forwards msg to the textinput while the bar is active.
 //
 // Behavior on tea.KeyMsg when active:
 //
 //   - "esc": closes the bar, clears the error, returns handled=true.
 //   - "enter": invokes dispatch with the trimmed value. Empty value
-//     closes silently. Otherwise the error/close behavior follows
+//     closes silently. Otherwise the value is recorded in the history
+//     — even when dispatch returns an error, so a mistyped command can
+//     be recalled and fixed — and the error/close behavior follows
 //     dispatch's return.
+//   - "up" / "down": recall older / newer history entries into the
+//     input, cursor at the end. Down past the newest restores what was
+//     typed before recall began. Recalled text edits like typed text.
+//     With nothing to recall the key is consumed and does nothing; it
+//     never cycles suggestions (ctrl+n / ctrl+p do that).
 //   - any other key: forwarded to the textinput. If a SuggestFn was
 //     registered, suggestions are refreshed against the new value.
+//     → at the end of the value accepts the current suggestion, as tab
+//     does.
+//
+// Opening, submitting and canceling all end any recall in progress.
 //
 // For non-KeyMsg messages (cursor blink, window resize, etc.) the
 // message is forwarded to the textinput so it stays animated, but
@@ -186,6 +219,10 @@ func (c *CommandBar) Update(msg tea.Msg, dispatch Dispatch) (handled bool, cmd t
 				errMsg string
 				dCmd   tea.Cmd
 			)
+			// Record before dispatching, so a dispatch that persists
+			// History() sees the command it is running.
+			c.history.add(value)
+			c.history.reset()
 			if dispatch != nil {
 				errMsg, dCmd = dispatch(value)
 			}
@@ -197,6 +234,11 @@ func (c *CommandBar) Update(msg tea.Msg, dispatch Dispatch) (handled bool, cmd t
 			c.err = ""
 			c.Close()
 			return true, dCmd
+		case keyStrUp, keyStrDown:
+			if changed := c.history.recall(&c.input, key.String()); changed && c.suggestFn != nil {
+				c.input.SetSuggestions(c.suggestFn(c.input.Value()))
+			}
+			return true, nil
 		case "right":
 			// → at the end of the input accepts the suggestion, as tab does
 			// and as in k9s. Mid-text it still moves the cursor.
