@@ -270,6 +270,23 @@ func currentLine(m *Model) string {
 	return m.visible[m.matches[m.MatchIndex()-1].vis]
 }
 
+// TestSetSearchStartsOver: a new search, even the same expression again,
+// has no current match until the next move.
+func TestSetSearchStartsOver(t *testing.T) {
+	t.Parallel()
+	m := New()
+	m.AppendLines(hitLines(6, 1, 3))
+	m.SetSearch("hit")
+	m.NextMatch()
+	m.NextMatch()
+	for _, expr := range []string{"hit", "line 03"} {
+		m.SetSearch(expr)
+		if m.MatchIndex() != 0 {
+			t.Errorf("SetSearch(%q) kept current match %d", expr, m.MatchIndex())
+		}
+	}
+}
+
 func TestSearchCombinedWithFilter(t *testing.T) {
 	t.Parallel()
 	m := New()
@@ -343,6 +360,18 @@ func TestHighlightPreservesStyling(t *testing.T) {
 			line: "日本 語hit",
 			expr: "語h",
 			want: "日本 " + testOn + "語h" + sgrReset + "it",
+		},
+		{
+			name: "a match inside a grapheme cluster widens to all of it",
+			line: "cafe\u0301 x",
+			expr: "\u0301",
+			want: "caf" + testOn + "e\u0301" + sgrReset + " x",
+		},
+		{
+			name: "a match ending inside a grapheme cluster widens to its end",
+			line: "0\u0a03 x",
+			expr: "0",
+			want: testOn + "0\u0a03" + sgrReset + " x",
 		},
 		{
 			name: "non-SGR escapes pass through",
