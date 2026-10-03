@@ -6,7 +6,6 @@ package chrome
 import (
 	"strings"
 
-	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/textinput"
 )
 
@@ -118,14 +117,4 @@ func (h *inputHistory) recall(in *textinput.Model, keyStr string) (changed bool)
 		in.CursorEnd()
 	}
 	return changed
-}
-
-// historyKeyMap is textinput's default keymap with up and down taken
-// off suggestion cycling, so they are free for history. ctrl+n and
-// ctrl+p still cycle suggestions; tab still accepts one.
-func historyKeyMap() textinput.KeyMap {
-	km := textinput.DefaultKeyMap()
-	km.NextSuggestion = key.NewBinding(key.WithKeys("ctrl+n"))
-	km.PrevSuggestion = key.NewBinding(key.WithKeys("ctrl+p"))
-	return km
 }

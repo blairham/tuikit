@@ -171,9 +171,11 @@ calls `OnFilter` with each recalled value, so the view re-filters live.
 
 Up/down mean history in both bars, as in k9s. That takes them from
 bubbles' `textinput`, whose default keymap cycles suggestions on
-up/down *and* ctrl+n/ctrl+p: the bars rebind suggestion cycling to
-ctrl+n/ctrl+p only. `tab`, and `→` at the end of the value, still accept
-the current suggestion.
+up/down *and* ctrl+n/ctrl+p. The bars' `Update` consumes up/down before
+the textinput sees them, so suggestions cycle on ctrl+n/ctrl+p only.
+`tab`, and `→` at the end of the value, still accept the current
+suggestion. An app that drives `Input().Update` directly bypasses this
+and gets textinput's own keymap; `Input()` is for rendering.
 
 `History()` returns a copy and `SetHistory([]string)` replaces the
 entries under the same recording rules, so apps can persist history

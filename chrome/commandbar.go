@@ -21,9 +21,11 @@ import (
 //
 // The bar remembers submitted commands: up recalls older ones and down
 // newer ones, k9s-style (see [CommandBar.Update] and
-// [CommandBar.History]). Because up/down mean history, suggestion
-// cycling sits on ctrl+n / ctrl+p only, not on textinput's default
-// up/down; tab and → (at the end of the value) accept a suggestion.
+// [CommandBar.History]). Because up/down mean history, they no longer
+// cycle suggestions as textinput's default keymap would:
+// [CommandBar.Update] keeps them from the textinput, so suggestions
+// cycle on ctrl+n / ctrl+p only. Tab and → (at the end of the value)
+// accept one.
 //
 // The bar handles a single mode — a `:` palette with optional
 // suggestions. Modal variants (y/n confirms, save-as prompts,
@@ -73,7 +75,6 @@ func NewCommandBar(t theme.Theme, opts CommandBarOpts) *CommandBar {
 		prompt = ":"
 	}
 	in := textinput.New()
-	in.KeyMap = historyKeyMap()
 	in.Prompt = prompt + " "
 	in.Placeholder = opts.Placeholder
 	if opts.Width > 0 {

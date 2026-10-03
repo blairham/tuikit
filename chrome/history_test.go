@@ -266,7 +266,7 @@ func TestCommandBar_HistoryRefreshesSuggestFn(t *testing.T) {
 func TestCommandBar_SetHistoryRoundTrip(t *testing.T) {
 	t.Parallel()
 	c := NewCommandBar(theme.Default(), CommandBarOpts{})
-	seed := []string{"pods", "", "deploy", "deploy", "svc"}
+	seed := []string{"pods", "", "deploy", "  ", "deploy", "svc"}
 	c.SetHistory(seed)
 	want := []string{"pods", "deploy", "svc"}
 	if got := c.History(); !slices.Equal(got, want) {

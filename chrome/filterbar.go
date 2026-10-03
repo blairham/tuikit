@@ -59,7 +59,6 @@ type OnFilter func(value string)
 // FilterBar.Input().SetStyles.
 func NewFilterBar(t theme.Theme, opts FilterBarOpts) *FilterBar {
 	in := textinput.New()
-	in.KeyMap = historyKeyMap()
 	if opts.Prompt != "" {
 		in.Prompt = opts.Prompt + " "
 	} else {
