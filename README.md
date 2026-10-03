@@ -1,5 +1,13 @@
 # tuikit
 
+[![CI](https://github.com/blairham/tuikit/actions/workflows/ci.yml/badge.svg)](https://github.com/blairham/tuikit/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/tag/blairham/tuikit?sort=semver&label=release)](https://github.com/blairham/tuikit/tags)
+[![CodeQL](https://github.com/blairham/tuikit/actions/workflows/codeql.yml/badge.svg)](https://github.com/blairham/tuikit/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/blairham/tuikit/badge)](https://scorecard.dev/viewer/?uri=github.com/blairham/tuikit)
+[![Go version](https://img.shields.io/github/go-mod/go-version/blairham/tuikit)](go.mod)
+[![Go Reference](https://pkg.go.dev/badge/github.com/blairham/tuikit.svg)](https://pkg.go.dev/github.com/blairham/tuikit)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 A k9s-style TUI chrome toolkit for [Bubble Tea](https://github.com/charmbracelet/bubbletea) apps. Build interactive terminal UIs that look and behave like `k9s` — info panel, shortcut grid, bordered content with injected titles, breadcrumb footer, live filter and command modes, help overlay — without reimplementing the chrome every time.
 
 > **Status:** v0.0.x — pre-stable. The API is still being shaped by the applications migrating onto it. Expect breaking changes through the v0.x line; `v0.1.0` tags once the surface settles and the API stabilizes.
@@ -126,4 +134,4 @@ not assume a fix has reached one just because it is on `main` here.
 
 ## License
 
-Apache-2.0. See [LICENSE](./LICENSE).
+Apache-2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE). Contributions are accepted under the [CLA](./CLA.md); see [CONTRIBUTING.md](./CONTRIBUTING.md).

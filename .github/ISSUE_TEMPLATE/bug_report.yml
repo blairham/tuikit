@@ -1,0 +1,37 @@
+name: Bug report
+description: Something tuikit drew or did that it should not have
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: tuikit version
+      description: The version in your go.mod, or a commit.
+    validations:
+      required: true
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal
+      description: e.g. Ghostty 1.2, iTerm2 3.6, kitty 0.43, inside tmux or not.
+  - type: dropdown
+    id: paint
+    attributes:
+      label: Theme paint mode
+      options:
+        - PaintModeFull (the theme paints its background)
+        - PaintModeNone (the terminal's background shows through)
+        - Not sure
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect instead?
+      description: A screenshot helps for anything drawn wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: A short main.go, or a change to one of the examples, that shows it.
+      render: go
