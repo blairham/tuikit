@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Blair Hamilton
+// SPDX-License-Identifier: Apache-2.0
+
 // Package tail wraps a [bubbles/v2/viewport] with a follow toggle and a
 // live regex filter, suitable for log / event / message streams.
 //

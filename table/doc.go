@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Blair Hamilton
+// SPDX-License-Identifier: Apache-2.0
+
 // Package table provides themed style and keymap helpers for
 // [bubbles/v2/table], plus the [FixSelectedRow] ANSI post-processor
 // that solves bubbles-table's selection-paint bug, a [RowFilter]
