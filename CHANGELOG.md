@@ -8,11 +8,25 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.18] - 2026-10-03
+
 ### Fixed
 
 - `table.ParseFilter` (and so `tail.Model.SetFilter`) no longer panics on
   an expression that is not valid UTF-8; the stray bytes become U+FFFD,
   which matches the same bytes in a field. (#74)
+
+### Changed
+
+- Dependencies raised, so a consumer's build moves to at least these:
+  bubbles v2.2.1, bubbletea v2.0.8, lipgloss v2.0.5, x/ansi v0.11.8,
+  go-colorful v1.4.1, yaml v3.0.5. (#76, #77, #78)
+
+### Added
+
+- Each tag now also gets a GitHub release with the tagged source, a
+  cosign-signed `checksums.txt` and SLSA build provenance; SECURITY.md has
+  the commands to verify them. (#81)
 
 ## [0.0.17] - 2026-10-02
 
