@@ -39,9 +39,9 @@ signs:
     artifacts: checksum
 
 # The notes are the tag's CHANGELOG.md section, passed by release.yml with
-# --release-notes; the commit list would only repeat it less carefully.
-changelog:
-  disable: true
+# --release-notes, which replaces the generated commit list. Do not set
+# `changelog.disable`: it skips the stage that reads --release-notes too, and
+# v0.0.18 went out with empty notes because of it.
 
 release:
   draft: false
