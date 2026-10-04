@@ -82,6 +82,13 @@ type Theme struct {
 	BreadcrumbBg     color.Color // pill bg for the trail (k9s: aqua)
 	BreadcrumbFg     color.Color // pill text (k9s: black)
 	BreadcrumbActive color.Color // pill bg for the current view (k9s: orange)
+	// Chart series colors, k9s's views.charts.defaultChartColors: the
+	// chart package draws series 0 in ChartPrimary and series 1 in
+	// ChartSecondary (CPU against memory), and alternates after that.
+	// Read them through [Theme.ChartColor]; nil falls back to Accent and
+	// AccentAlt.
+	ChartPrimary   color.Color
+	ChartSecondary color.Color
 
 	// Help overlay colors (k9s-style: muted-red title pill, green section
 	// headers, cadet-blue description text, cyan border).
@@ -173,6 +180,17 @@ func (t Theme) SelectionTextColor() color.Color {
 // or [Theme.Value] when unset.
 func (t Theme) TableHeaderColor() color.Color { return or(t.TableHeader, t.Value) }
 
+// ChartColor is the color the chart package draws series i in:
+// [Theme.ChartPrimary] for an even i and [Theme.ChartSecondary] for an
+// odd one, falling back to [Theme.Accent] and [Theme.AccentAlt] when
+// unset, so series 0 and 1 are always told apart.
+func (t Theme) ChartColor(i int) color.Color {
+	if i%2 != 0 {
+		return or(t.ChartSecondary, t.AccentAlt)
+	}
+	return or(t.ChartPrimary, t.Accent)
+}
+
 // Default returns the canonical k9s-style theme: deep-black canvas,
 // light-sky-blue focused border, dodger-blue unfocused borders, aqua/fuchsia accents, full background painting.
 // This is the default look.
@@ -200,6 +218,8 @@ func Default() Theme {
 		BreadcrumbBg:     lipgloss.Color("#00FFFF"), // Aqua (k9s crumbs bgColor)
 		BreadcrumbFg:     lipgloss.Color("#000000"), // Black (k9s crumbs fgColor)
 		BreadcrumbActive: lipgloss.Color("#FFA500"), // Orange (k9s crumbs activeColor)
+		ChartPrimary:     lipgloss.Color("#98FB98"), // PaleGreen (k9s defaultChartColors[0])
+		ChartSecondary:   lipgloss.Color("#FF4500"), // OrangeRed (k9s defaultChartColors[1])
 		HelpTitle:        lipgloss.Color("#CD5C5C"), // IndianRed (k9s help title pill)
 		HelpSection:      lipgloss.Color("#008000"), // Green (k9s help SectionColor)
 		HelpDesc:         lipgloss.Color("#5F9EA0"), // CadetBlue (k9s help description text)

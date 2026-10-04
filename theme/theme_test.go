@@ -4,6 +4,7 @@
 package theme
 
 import (
+	"image/color"
 	"strings"
 	"testing"
 
@@ -184,5 +185,35 @@ func TestRebuild_PicksUpBorderFocus(t *testing.T) {
 	th.Rebuild()
 	if got := th.TableBorder.Render("X"); !strings.Contains(got, dockerBlueSGR) {
 		t.Errorf("TableBorder after Rebuild = %q, want foreground %s", got, dockerBlueSGR)
+	}
+}
+
+func TestChartColor(t *testing.T) {
+	t.Parallel()
+	d := Default()
+	for i, want := range []color.Color{d.ChartPrimary, d.ChartSecondary, d.ChartPrimary, d.ChartSecondary} {
+		if got := d.ChartColor(i); got != want {
+			t.Errorf("Default().ChartColor(%d) = %v, want %v", i, got, want)
+		}
+	}
+	if d.ChartColor(0) == d.ChartColor(1) {
+		t.Errorf("series 0 and 1 share the color %v", d.ChartColor(0))
+	}
+	if want := lipgloss.Color("#98FB98"); d.ChartPrimary != want {
+		t.Errorf("ChartPrimary = %v, want PaleGreen %v (k9s defaultChartColors)", d.ChartPrimary, want)
+	}
+	if want := lipgloss.Color("#FF4500"); d.ChartSecondary != want {
+		t.Errorf("ChartSecondary = %v, want OrangeRed %v (k9s defaultChartColors)", d.ChartSecondary, want)
+	}
+
+	bare := Theme{Accent: lipgloss.Color("#00FFFF"), AccentAlt: lipgloss.Color("#FF00FF")}
+	if got := bare.ChartColor(0); got != bare.Accent {
+		t.Errorf("hand-built ChartColor(0) = %v, want Accent %v", got, bare.Accent)
+	}
+	if got := bare.ChartColor(1); got != bare.AccentAlt {
+		t.Errorf("hand-built ChartColor(1) = %v, want AccentAlt %v", got, bare.AccentAlt)
+	}
+	if got := bare.ChartColor(-1); got != bare.AccentAlt {
+		t.Errorf("hand-built ChartColor(-1) = %v, want AccentAlt %v", got, bare.AccentAlt)
 	}
 }
