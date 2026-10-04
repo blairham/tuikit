@@ -2,8 +2,8 @@
 
 Documentation for tuikit, a k9s-style TUI chrome toolkit for
 [Bubble Tea v2](https://github.com/charmbracelet/bubbletea) apps. The
-library is seven composable packages under one module — `theme`, `chrome`,
-`table`, `tail`, `tree`, `loading`, `viewfsm` — that apps import à la carte;
+library is eight composable packages under one module — `theme`, `chrome`,
+`table`, `tail`, `tree`, `chart`, `loading`, `viewfsm` — that apps import à la carte;
 nothing here owns the `tea.Program` loop. Status is pre-stable `v0.0.x`
 while the applications that use it migrate onto it.
 

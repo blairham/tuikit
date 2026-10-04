@@ -18,7 +18,7 @@ Public at `github.com/blairham/tuikit`, Apache-2.0 with a CLA (`CLA.md`), and ev
 
 - `.github/workflows/ci.yml` — pre-commit, build + race tests, `go vet ./examples/...`. CodeQL (`codeql.yml`, `security-extended`) and OpenSSF Scorecard (`scorecard.yml`) run alongside. Every action is pinned by commit SHA with a `# vX.Y.Z` comment, and workflows are read-only by default; Dependabot bumps both the pins and the Go modules monthly.
 - `main` is guarded by a repository ruleset, not classic branch protection (Scorecard cannot read classic protection with its token): squash-only PRs, signed commits, linear history, stale reviews dismissed, and the CI and CodeQL checks required on a branch that is up to date with `main`. **Nobody bypasses it, admins included** — every change, a release's CHANGELOG move too, lands as a PR; a direct push to `main` is refused. Tags are not covered, so `git push origin vX.Y.Z` still works.
-- Fuzz targets live beside the code that takes untrusted text (`table/filter_fuzz_test.go`, `chrome/dump_fuzz_test.go`, `theme/sgr_fuzz_test.go`, `tail/search_fuzz_test.go`, `tree/tree_fuzz_test.go`). `go test` runs their seeds; `go test -fuzz` explores. Each checks a property, not just "no panic".
+- Fuzz targets live beside the code that takes untrusted text (`table/filter_fuzz_test.go`, `chrome/dump_fuzz_test.go`, `theme/sgr_fuzz_test.go`, `tail/search_fuzz_test.go`, `tree/tree_fuzz_test.go`) and beside the code that takes arbitrary numbers (`chart/chart_fuzz_test.go`: NaN, ±Inf and huge samples at any size). `go test` runs their seeds; `go test -fuzz` explores. Each checks a property, not just "no panic".
 - `SECURITY.md` states what tuikit does and does not protect — notably that it does **not** sanitize content — and what counts as a vulnerability. Keep it true when behavior changes.
 
 ## Quick Reference
@@ -48,7 +48,7 @@ Go-based tooling (`gofumpt`, `fieldalignment`, `golangci-lint`) is declared in `
 
 ## Project Structure
 
-Seven composable packages under one module, all rooted on `theme`. Apps import whichever subset they need; nothing here owns the `tea.Program` loop.
+Eight composable packages under one module, all rooted on `theme`. Apps import whichever subset they need; nothing here owns the `tea.Program` loop.
 
 | Package | Role |
 |---|---|
@@ -57,14 +57,15 @@ Seven composable packages under one module, all rooted on `theme`. Apps import w
 | `table/` | Themed `bubbles/v2/table` styles, the `FixSelectedRow` ANSI fix, a `RowFilter`, a `Sorter` (shift+←/→ sort column, stable sort, header indicator), `Marks` (space / ctrl+space / ctrl+\ row marks keyed to survive re-sorts), and `PlainText` (every row as aligned text, for saving). |
 | `tail/` | Viewport + follow-mode + `RowFilter` for log streams, and a search (`SetSearch`, `NextMatch`/`PrevMatch`) that highlights matches without hiding lines. |
 | `tree/` | A navigable, collapsible tree (k9s's xray): `Node`s keyed by a stable ID so expansion and the cursor survive a refresh, box-drawing guides with ▸/▾ markers, `HandleKey` navigation (h/l collapse-or-parent / expand-or-child, space toggles, enter left to the app), and a `RowFilter` that keeps a node when it or a descendant matches. |
+| `chart/` | Small live charts for a k9s-pulses-style dashboard: `Series` (a bounded ring buffer of samples), `Sparkline` (one or more series in ▁▂▃▄▅▆▇█ blocks, stacked for taller rows, fixed or auto scale, title + current-value header), `Gauge` (a value against a total as a bar, high- or low-is-bad warn/critical thresholds in the status colors), and `Grid` (lays widgets out in rows and columns). Every widget's `View` is exactly its `Resize` height in lines of exactly its width in cells. |
 | `loading/` | Spinner + rotating-tip loading / transition screen. |
 | `viewfsm/` | The `Router` over `ViewID` constants: drill stack, digit hotkeys, breadcrumbs, plus the `TranslateNavKey` helper. **No `View` interface** — apps own their view models. |
 
-`examples/` holds runnable demos (`examples/commandbar`, `examples/tree`). See [`docs/design/`](docs/design/) for per-subsystem design notes.
+`examples/` holds runnable demos (`examples/commandbar`, `examples/tree`, `examples/chart`). See [`docs/design/`](docs/design/) for per-subsystem design notes.
 
 ## Architecture
 
-Seven composable packages under one module. Apps import whichever subset they need; nothing here owns the `tea.Program` loop.
+Eight composable packages under one module. Apps import whichever subset they need; nothing here owns the `tea.Program` loop.
 
 ```
 theme  ── color palette + lipgloss styles + Theme struct (DI seed)
@@ -73,6 +74,7 @@ theme  ── color palette + lipgloss styles + Theme struct (DI seed)
    ├──► table     (themed bubbles/v2/table styles, FixSelectedRow ANSI fix, RowFilter, Sorter, Marks)
    ├──► tail      (viewport + follow-mode + RowFilter + search for log streams and documents)
    ├──► tree      (collapsible tree view, k9s xray style: ID-keyed state, guides, filter)
+   ├──► chart     (sparklines, gauges and a grid for a k9s pulses-style dashboard)
    ├──► loading   (spinner + rotating-tip loading/transition screen)
    └──► viewfsm   (Router over ViewID consts: drill stack, digit hotkeys, breadcrumbs)
 ```
@@ -80,6 +82,8 @@ theme  ── color palette + lipgloss styles + Theme struct (DI seed)
 `tail.Model` feeds via `AppendLine`/`AppendLines` (live, at bottom) and `PrependLines` (older history, at top, preserving scroll position); `AtTop` is the cue to fetch more history. `SetBackground` re-asserts the theme background after the reset codes in styled log lines so the content stays continuous (lipgloss does not restore a surrounding background after an inner reset). `SetSearch` highlights matches (against the ANSI-stripped text) in the content handed to the viewport, so wrap and horizontal cuts carry the highlight; `tail/highlight.go` mirrors `ansi.Strip`'s state machine to map matches back into the styled line, and `FuzzSearch` pins that highlighting never changes the text.
 
 `tree.Model` takes the whole tree on every `SetRoots` and keys everything it remembers — which nodes are open, the cursor — by `Node.ID`, so an app can rebuild its nodes on each poll and the user keeps their place; a selected node that disappears hands the cursor to its nearest ancestor still on screen. A filter keeps a node when it or a descendant matches and has its own expansion state, reset by each `SetFilter`, so filtering never disturbs the user's.
+
+`chart.Sparkline` holds `*chart.Series` pointers and reads them on every `View`, so an app pushes a sample per poll and renders as usual. Every chart widget's `View` is exactly its height in lines of exactly its width in cells (ANSI-aware), which is what lets `chart.Grid` — or the app's own lipgloss joins — tile them without measuring; `FuzzChart` pins that for any samples and sizes. Drawing treats NaN, negatives and -Inf as zero and +Inf as full, and never lets an infinity set the auto scale. Series 0 and 1 draw in `Theme.ChartColor(0)` / `(1)` (k9s's palegreen / orangered); gauge thresholds use `Status.Warn` / `Status.Error`.
 
 `loading.Model` is a spinner beside a rotating one-line tip for loading screens and between-views transitions: `Tick` to start, forward each `TickMsg` to `Update` while loading, render `View`/`Centered`.
 
