@@ -8,6 +8,24 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.21] - 2026-10-04
+
+### Added
+
+- `chart`: small live charts for a dashboard in the style of k9s's pulses.
+  `Series` is a bounded ring buffer of samples; `Sparkline` draws one or
+  more series in ▁▂▃▄▅▆▇█ blocks, stacked on taller charts (3 rows give 24
+  levels), scaled to `SetMax` or to the data on screen, newest on the
+  right, with an optional title and current-value header; `Gauge` draws a
+  value against a total as a bar with a label and high- or low-is-bad
+  warn/critical thresholds in the status colors; `Grid` lays widgets out in
+  rows and columns. Every widget draws exactly its `Resize` size; NaN,
+  negative and -Inf samples draw as zero and +Inf as full. See
+  `examples/chart`. (#97)
+- `theme`: `ChartPrimary` and `ChartSecondary` (k9s's palegreen and
+  orangered chart colors) and `Theme.ChartColor(i)`, falling back to
+  `Accent` / `AccentAlt` when unset. (#97)
+
 ## [0.0.20] - 2026-10-04
 
 ### Added
