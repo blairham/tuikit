@@ -17,6 +17,10 @@ app's process, with your app's privileges. It adds none of its own.
   label stays on its own row, and draws the selected row — and any label
   whose escape sequences are left unfinished — with escape sequences
   removed. That is layout, not sanitizing: other rows keep their bytes.
+- The `chart` widgets draw titles and labels as plain text: escape
+  sequences are removed and control characters drawn as spaces, so a
+  header stays one line of known width. Samples are numbers, and no value —
+  NaN and the infinities included — can change the size a chart draws at.
 - The filter bar's text (`table.ParseFilter`, `tail.Model.SetFilter`,
   `tree.Model.SetFilter`) is
   compiled as a case-insensitive Go regular expression, which runs in linear
