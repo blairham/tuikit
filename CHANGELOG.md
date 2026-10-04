@@ -8,6 +8,12 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `theme`: a k9s skin's `views.charts.defaultChartColors` now sets
+  `ChartPrimary` and `ChartSecondary` from its first two entries, so a skin
+  recolors charts too. A list with one entry sets only `ChartPrimary`. (#99)
+
 ## [0.0.21] - 2026-10-04
 
 ### Added

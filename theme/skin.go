@@ -115,8 +115,16 @@ type SkinInfo struct {
 
 // SkinViews is k9s.views.
 type SkinViews struct {
-	Table SkinTable `yaml:"table"`
-	Logs  SkinLogs  `yaml:"logs"`
+	Charts SkinCharts `yaml:"charts"`
+	Table  SkinTable  `yaml:"table"`
+	Logs   SkinLogs   `yaml:"logs"`
+}
+
+// SkinCharts is k9s.views.charts. DefaultChartColors' first two entries
+// become ChartPrimary and ChartSecondary; k9s's dial and per-resource
+// colors have no counterpart yet.
+type SkinCharts struct {
+	DefaultChartColors []string `yaml:"defaultChartColors"`
 }
 
 // SkinTable is k9s.views.table. CursorColor is the older name of
@@ -213,6 +221,11 @@ func (t Theme) WithSkin(s Skin) (Theme, error) {
 		{&t.LogText, "views.logs.fgColor", s.Views.Logs.FgColor},
 	} {
 		set(e.dst, e.key, e.value)
+	}
+	for i, dst := range []*color.Color{&t.ChartPrimary, &t.ChartSecondary} {
+		if i < len(s.Views.Charts.DefaultChartColors) {
+			set(dst, fmt.Sprintf("views.charts.defaultChartColors[%d]", i), s.Views.Charts.DefaultChartColors[i])
+		}
 	}
 
 	if err != nil {

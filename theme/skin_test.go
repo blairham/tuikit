@@ -133,6 +133,8 @@ k9s:
       header: {fgColor: "#f1fa8c"}
     logs: {fgColor: "#f8f8f2"}
     xray: {fgColor: "#ffffff"}
+    charts:
+      defaultChartColors: ["#50fa7b", "#ff5555"]
 `
 
 func TestWithSkin(t *testing.T) {
@@ -174,6 +176,8 @@ func TestWithSkin(t *testing.T) {
 		"TableHeader":             {got.TableHeader, lipgloss.Color("#f1fa8c")},
 		"Mark":                    {got.Mark, lipgloss.Color("#ffb86c")},
 		"LogText":                 {got.LogText, lipgloss.Color("#f8f8f2")},
+		"ChartPrimary":            {got.ChartPrimary, lipgloss.Color("#50fa7b")},
+		"ChartSecondary":          {got.ChartSecondary, lipgloss.Color("#ff5555")},
 		"ShortcutKey (rebuilt)":   {got.ShortcutKey.GetForeground(), lipgloss.Color("#ff79c6")},
 		"Muted (not in the skin)": {got.Muted, Default().Muted},
 	} {
@@ -205,5 +209,23 @@ func TestOptionalColorsFallBack(t *testing.T) {
 		hex(d.TableHeaderColor()) != hex(d.Value) ||
 		hex(d.LogTextColor()) != hex(d.Selection) {
 		t.Error("an unset optional color does not fall back to the color used before it")
+	}
+}
+
+// TestSkinChartColorsPartial: a skin naming one chart color sets the first
+// and leaves the second at its default; a bad color names its index.
+func TestSkinChartColorsPartial(t *testing.T) {
+	var s Skin
+	s.Views.Charts.DefaultChartColors = []string{"#123456"}
+	got, err := Default().WithSkin(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hex(got.ChartPrimary) != "#123456" || hex(got.ChartSecondary) != hex(Default().ChartSecondary) {
+		t.Errorf("one color: primary %s secondary %s", hex(got.ChartPrimary), hex(got.ChartSecondary))
+	}
+	s.Views.Charts.DefaultChartColors = []string{"#123456", "notacolor"}
+	if _, err := Default().WithSkin(s); err == nil || !strings.Contains(err.Error(), "defaultChartColors[1]") {
+		t.Errorf("a bad second color: %v", err)
 	}
 }
