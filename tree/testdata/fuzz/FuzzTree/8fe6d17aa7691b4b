@@ -1,0 +1,6 @@
+go test fuzz v1
+string("\x1b\xff0")
+string("0")
+string("!1")
+byte('\a')
+[]byte("1")
