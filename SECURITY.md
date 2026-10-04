@@ -5,15 +5,20 @@
 tuikit is a library: it draws what your app hands it and runs inside your
 app's process, with your app's privileges. It adds none of its own.
 
-- **It does not sanitize content.** Table cells, log lines in a `tail`, view
-  titles and modal text are drawn as given, escape sequences included — that
+- **It does not sanitize content.** Table cells, log lines in a `tail`, tree
+  labels, view titles and modal text are drawn as given, escape sequences included — that
   is how styled content keeps its color. Text from an untrusted source, such
   as a container's log output, should have its terminal control sequences
   stripped by the app before it reaches tuikit.
 - `table.FixSelectedRow`, `table.FixRows` and `theme.ReassertBackground`
   rewrite SGR (color) sequences and only those; every other byte passes
   through unchanged.
-- The filter bar's text (`table.ParseFilter`, `tail.Model.SetFilter`) is
+- `tree.Model.View` draws a label's line breaks and tabs as spaces, so a
+  label stays on its own row, and draws the selected row — and any label
+  whose escape sequences are left unfinished — with escape sequences
+  removed. That is layout, not sanitizing: other rows keep their bytes.
+- The filter bar's text (`table.ParseFilter`, `tail.Model.SetFilter`,
+  `tree.Model.SetFilter`) is
   compiled as a case-insensitive Go regular expression, which runs in linear
   time, and falls back to a literal match when it does not compile. The
   `-f` (fuzzy) and `-l` (label selector) forms compile nothing: a fuzzy
