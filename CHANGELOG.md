@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.22] - 2026-10-04
+
 ### Added
 
 - `theme`: a k9s skin's `views.charts.defaultChartColors` now sets
