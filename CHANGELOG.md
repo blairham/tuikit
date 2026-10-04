@@ -8,6 +8,24 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.20] - 2026-10-04
+
+### Added
+
+- `tree`: a navigable, collapsible tree view in the style of k9s's xray.
+  `SetRoots` takes `Node{ID, Label, Children}` as often as an app polls,
+  keeping expansion state and the cursor by ID (a removed selection moves
+  to its nearest surviving ancestor); `SetDefaultDepth` sets how deep new
+  nodes start open. `HandleKey` moves over visible rows (↑/↓ j/k,
+  pgup/pgdown ctrl+b/ctrl+f, home/end g/G), → / l expands or steps into
+  the first child, ← / h collapses or steps to the parent, space toggles;
+  enter is left to the app. `ExpandAll`, `CollapseAll`, `Selected`,
+  `SelectedPath`, `Count`, `VisibleCount`. `SetFilter` takes a
+  `table.ParseFilter` expression and keeps a node when it or a descendant
+  matches, with the path to every match opened. `View` draws box-drawing
+  guides with ▸/▾ markers, the selection in the theme's selection colors,
+  and ANSI-aware truncation. See `examples/tree`. (#94)
+
 ## [0.0.19] - 2026-10-03
 
 ### Added

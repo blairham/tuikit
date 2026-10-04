@@ -118,7 +118,7 @@ never taller than `TopSectionRows()`, and the header always occupies exactly
 ## Releases
 
 A release *is* a signed git tag, and consumers pick it up with
-`go get github.com/blairham/tuikit@vX.Y.Z`. Newest tag: **v0.0.19**. Each tag
+`go get github.com/blairham/tuikit@vX.Y.Z`. Newest tag: **v0.0.20**. Each tag
 also gets a GitHub release with the tagged source, a cosign-signed
 `checksums.txt` and build provenance — see [SECURITY.md](SECURITY.md) for
 verifying them.
