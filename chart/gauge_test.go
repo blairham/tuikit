@@ -40,6 +40,9 @@ func TestGaugeBar(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := gauge(tc.value, tc.total, tc.w, 1)
 			equalLines(t, stripped(t, g.View(), tc.w, 1), tc.want)
+			if r := g.Ratio(); !(r >= 0 && r <= 1) {
+				t.Errorf("Ratio() = %v, want it in [0, 1]", r)
+			}
 		})
 	}
 }

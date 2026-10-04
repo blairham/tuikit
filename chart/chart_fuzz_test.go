@@ -56,6 +56,7 @@ func FuzzChart(f *testing.F) {
 		{samples: fuzzBytes(1, 2, 3, 4), top: 0, w: 10, h: 3, title: "CPU"},
 		{samples: fuzzBytes(math.NaN(), math.Inf(1), math.Inf(-1), -1, 0), top: 100, w: 4, h: 1, title: ""},
 		{samples: fuzzBytes(math.MaxFloat64, -math.MaxFloat64, math.SmallestNonzeroFloat64), top: math.NaN(), w: 2, h: 2},
+		{samples: fuzzBytes(9, 1), top: 0.5, w: 7, h: 2, title: "over"},
 		{samples: nil, top: math.Inf(1), w: 1, h: 1, title: "\x1b[31mred\x1b["},
 		{samples: fuzzBytes(5, 5, 5, 5, 5, 5, 5, 5, 5), top: 5, w: 3, h: 8, title: "日本語\n\t\xff"},
 		{samples: fuzzBytes(0.5, math.Copysign(0, -1), 1e-300, 1e300), top: 1e-310, w: 60, h: 5, title: "a long title for a narrow chart"},
