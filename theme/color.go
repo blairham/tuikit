@@ -16,15 +16,16 @@ import (
 const defaultColor = "default"
 
 // ParseColor reads a skin color as k9s writes one: a CSS color name
-// ("dodgerblue", any case), "#rrggbb" or "#rgb", or "default" (also
-// "transparent") for the terminal's own color, which comes back as
-// lipgloss.NoColor. An empty string is not set and returns nil.
+// ("dodgerblue", any case, and tcell's "rebeccapurple"), "#rrggbb" or
+// "#rgb", or "default" (also "-" and "transparent") for the terminal's
+// own color, which comes back as lipgloss.NoColor. An empty string is
+// not set and returns nil.
 func ParseColor(s string) (color.Color, error) {
 	s = strings.ToLower(strings.TrimSpace(s))
 	switch s {
 	case "":
 		return nil, nil //nolint:nilnil // unset is not an error and has no color
-	case defaultColor, "transparent":
+	case defaultColor, "-", "transparent":
 		return lipgloss.NoColor{}, nil
 	}
 	if hex, ok := strings.CutPrefix(s, "#"); ok {
@@ -38,6 +39,9 @@ func ParseColor(s string) (color.Color, error) {
 			return nil, fmt.Errorf("color %q: not hexadecimal", s)
 		}
 		return lipgloss.Color("#" + strings.ToUpper(hex)), nil
+	}
+	if s == "rebeccapurple" { // tcell knows it; x/image/colornames does not
+		return lipgloss.Color("#663399"), nil
 	}
 	if v, ok := colorNames[s]; ok {
 		return lipgloss.Color(fmt.Sprintf("#%06X", v)), nil

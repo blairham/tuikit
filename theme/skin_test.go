@@ -28,12 +28,14 @@ func hex(c color.Color) string {
 
 func TestParseColor(t *testing.T) {
 	for in, want := range map[string]string{
-		"dodgerblue": "#1e90ff",
-		"DodgerBlue": "#1e90ff",
-		"#87cefa":    "#87cefa",
-		"#abc":       "#aabbcc",
-		"default":    "default",
-		"":           "<nil>",
+		"dodgerblue":    "#1e90ff",
+		"DodgerBlue":    "#1e90ff",
+		"#87cefa":       "#87cefa",
+		"#abc":          "#aabbcc",
+		"default":       "default",
+		"-":             "default",
+		"rebeccapurple": "#663399",
+		"":              "<nil>",
 	} {
 		c, err := ParseColor(in)
 		if err != nil || hex(c) != want {
@@ -132,7 +134,7 @@ k9s:
       markColor: "#ffb86c"
       header: {fgColor: "#f1fa8c"}
     logs: {fgColor: "#f8f8f2"}
-    xray: {fgColor: "#ffffff"}
+    xray: {fgColor: "#ffffff", cursorColor: "#ff79c6", cursorTextColor: "#282a36", graphicColor: "#6272a4"}
     charts:
       defaultChartColors: ["#50fa7b", "#ff5555"]
 `
@@ -144,10 +146,7 @@ func TestWithSkin(t *testing.T) {
 	if err := yaml.Unmarshal([]byte(skinYAML), &file); err != nil {
 		t.Fatal(err)
 	}
-	got, err := Default().WithSkin(file.K9s)
-	if err != nil {
-		t.Fatal(err)
-	}
+	got := Default().WithSkin(file.K9s)
 	for name, pair := range map[string][2]color.Color{
 		"Logo":                    {got.Logo, lipgloss.Color("#bd93f9")},
 		"Label":                   {got.Label, lipgloss.Color("#ff69b4")},
@@ -176,6 +175,10 @@ func TestWithSkin(t *testing.T) {
 		"TableHeader":             {got.TableHeader, lipgloss.Color("#f1fa8c")},
 		"Mark":                    {got.Mark, lipgloss.Color("#ffb86c")},
 		"LogText":                 {got.LogText, lipgloss.Color("#f8f8f2")},
+		"XrayText":                {got.XrayText, lipgloss.Color("#ffffff")},
+		"XrayCursor":              {got.XrayCursor, lipgloss.Color("#ff79c6")},
+		"XrayCursorText":          {got.XrayCursorText, lipgloss.Color("#282a36")},
+		"XrayGraphic":             {got.XrayGraphic, lipgloss.Color("#6272a4")},
 		"ChartPrimary":            {got.ChartPrimary, lipgloss.Color("#50fa7b")},
 		"ChartSecondary":          {got.ChartSecondary, lipgloss.Color("#ff5555")},
 		"ShortcutKey (rebuilt)":   {got.ShortcutKey.GetForeground(), lipgloss.Color("#ff79c6")},
@@ -190,11 +193,125 @@ func TestWithSkin(t *testing.T) {
 	}
 }
 
-func TestWithSkinNamesABadColor(t *testing.T) {
+// TestSkinBadColorIsTerminalDefault: a color ParseColor cannot read is
+// drawn in the terminal's own color, as k9s draws it — k9s's stock skin
+// names "linegreen" — and Check names every such key.
+func TestSkinBadColorIsTerminalDefault(t *testing.T) {
 	var s Skin
 	s.Frame.Menu.KeyColor = "bluish"
-	if _, err := Default().WithSkin(s); err == nil || !strings.Contains(err.Error(), "k9s.frame.menu.keyColor") {
-		t.Errorf("err = %v, want it to name k9s.frame.menu.keyColor", err)
+	s.Views.Charts.DefaultChartColors = []string{"linegreen", "#ff0000"}
+	s.Views.Charts.ResourceColors = map[string][]string{"batch/v1/jobs": {"#00ff00", "nope"}}
+	got := Default().WithSkin(s)
+	if hex(got.MenuKey) != "default" || hex(got.ChartPrimary) != "default" || hex(got.ChartSecondary) != "#ff0000" {
+		t.Errorf(
+			"MenuKey %s, ChartPrimary %s, ChartSecondary %s",
+			hex(got.MenuKey),
+			hex(got.ChartPrimary),
+			hex(got.ChartSecondary),
+		)
+	}
+	err := s.Check()
+	for _, key := range []string{
+		"k9s.frame.menu.keyColor",
+		"k9s.views.charts.defaultChartColors[0]",
+		"k9s.views.charts.resourceColors.batch/v1/jobs[1]",
+	} {
+		if err == nil || !strings.Contains(err.Error(), key+": ") {
+			t.Errorf("Check() = %v, want it to name %s", err, key)
+		}
+	}
+	if err != nil && strings.Count(err.Error(), "\n") != 2 {
+		t.Errorf("Check() names more than the three bad colors: %v", err)
+	}
+	if err := (Skin{}).Check(); err != nil {
+		t.Errorf("an empty skin: %v", err)
+	}
+}
+
+// allKeysYAML sets every key in k9s's skin schema (internal/config/
+// styles.go), each to a distinct valid color, in every color form k9s
+// reads, with the YAML anchors k9s's stock skins are written with.
+const allKeysYAML = `
+foreground: &fg "#c0c0c0"
+k9s:
+  body: {fgColor: *fg, bgColor: "-", logoColor: orange, logoColorMsg: white, logoColorInfo: green, logoColorWarn: yellow, logoColorError: red}
+  prompt:
+    fgColor: cadetblue
+    bgColor: black
+    suggestColor: dodgerblue
+    border: {command: aqua, default: seagreen}
+  help: {fgColor: cadetblue, bgColor: black, sectionColor: green, keyColor: dodgerblue, numKeyColor: fuchsia}
+  dialog: {fgColor: dodgerblue, bgColor: black, buttonFgColor: black, buttonBgColor: dodgerblue, buttonFocusFgColor: white, buttonFocusBgColor: fuchsia, labelFgColor: fuchsia, fieldFgColor: dodgerblue}
+  frame:
+    title: {fgColor: aqua, bgColor: black, highlightColor: fuchsia, counterColor: papayawhip, filterColor: seagreen}
+    border: {fgColor: dodgerblue, focusColor: lightskyblue}
+    menu: {fgColor: white, fgStyle: dim, keyColor: dodgerblue, numKeyColor: fuchsia}
+    crumbs: {fgColor: black, bgColor: aqua, activeColor: orange}
+    status: {newColor: lightskyblue, modifyColor: greenyellow, addColor: dodgerblue, pendingColor: darkorange, errorColor: orangered, highlightColor: aqua, killColor: mediumpurple, completedColor: gray}
+  info: {fgColor: orange, sectionColor: white, cpuColor: rebeccapurple, memColor: "#abc", k9sRevColor: default}
+  views:
+    table:
+      fgColor: aqua
+      bgColor: black
+      cursorFgColor: black
+      cursorBgColor: aqua
+      cursorColor: aqua
+      markColor: palegreen
+      header: {fgColor: white, bgColor: black, sorterColor: aqua, selectedSortColumnColor: orange}
+    xray: {fgColor: blue, bgColor: black, cursorColor: aqua, cursorTextColor: black, graphicColor: darkgoldenrod}
+    charts:
+      bgColor: default
+      dialBgColor: black
+      chartBgColor: black
+      defaultDialColors: [palegreen, orangered]
+      defaultChartColors: [palegreen, orangered]
+      resourceColors:
+        batch/v1/jobs: [palegreen, orangered]
+        v1/pods: [aqua, fuchsia]
+      focusFgColor: white
+      focusBgColor: black
+    yaml: {keyColor: steelblue, valueColor: papayawhip, colonColor: white}
+    picker: {mainColor: white, focusColor: aqua, shortcutColor: fuchsia}
+    logs:
+      fgColor: white
+      bgColor: black
+      indicator: {fgColor: white, bgColor: black, toggleOnColor: limegreen, toggleOffColor: gray}
+`
+
+// TestSkinDecodesEveryK9sKey: a skin using every key k9s reads decodes
+// with unknown keys refused, so no k9s key is missing from Skin, and every
+// color in it reads.
+func TestSkinDecodesEveryK9sKey(t *testing.T) {
+	var file struct {
+		Foreground string `yaml:"foreground"`
+		K9s        Skin   `yaml:"k9s"`
+	}
+	dec := yaml.NewDecoder(strings.NewReader(allKeysYAML))
+	dec.KnownFields(true)
+	if err := dec.Decode(&file); err != nil {
+		t.Fatal(err)
+	}
+	s := file.K9s
+	if s.Body.FgColor != "#c0c0c0" || s.Frame.Menu.FgStyle != "dim" ||
+		s.Views.Logs.Indicator.ToggleOnColor != "limegreen" ||
+		len(s.Views.Charts.ResourceColors["v1/pods"]) != 2 ||
+		s.Dialog.ButtonFocusBgColor != "fuchsia" {
+		t.Errorf("decoded %+v", s)
+	}
+	if err := s.Check(); err != nil {
+		t.Error(err)
+	}
+	var n int
+	walkSkin(reflect.ValueOf(s), "k9s", func(_, value string) {
+		if value != "" {
+			n++
+		}
+	})
+	if n != 91 { // the colors in allKeysYAML; fgStyle is not one
+		t.Errorf("walkSkin saw %d set colors, want 91", n)
+	}
+	if got := Default().WithSkin(s); got.PaintBackground {
+		t.Error(`body bgColor "-" left the background painted`)
 	}
 }
 
@@ -207,25 +324,26 @@ func TestOptionalColorsFallBack(t *testing.T) {
 		hex(d.ShortcutDesc.GetForeground()) != hex(d.Muted) ||
 		hex(d.TableTextColor()) != hex(d.Selection) ||
 		hex(d.TableHeaderColor()) != hex(d.Value) ||
-		hex(d.LogTextColor()) != hex(d.Selection) {
+		hex(d.LogTextColor()) != hex(d.Selection) ||
+		hex(d.XrayTextColor()) != hex(d.TableTextColor()) ||
+		hex(d.XrayCursorColor()) != hex(d.Selection) ||
+		hex(d.XrayCursorTextColor()) != hex(d.SelectionTextColor()) ||
+		hex(d.XrayGraphicColor()) != hex(d.Muted) {
 		t.Error("an unset optional color does not fall back to the color used before it")
 	}
 }
 
 // TestSkinChartColorsPartial: a skin naming one chart color sets the first
-// and leaves the second at its default; a bad color names its index.
+// and leaves the second at its default; Check names a bad one by index.
 func TestSkinChartColorsPartial(t *testing.T) {
 	var s Skin
 	s.Views.Charts.DefaultChartColors = []string{"#123456"}
-	got, err := Default().WithSkin(s)
-	if err != nil {
-		t.Fatal(err)
-	}
+	got := Default().WithSkin(s)
 	if hex(got.ChartPrimary) != "#123456" || hex(got.ChartSecondary) != hex(Default().ChartSecondary) {
 		t.Errorf("one color: primary %s secondary %s", hex(got.ChartPrimary), hex(got.ChartSecondary))
 	}
 	s.Views.Charts.DefaultChartColors = []string{"#123456", "notacolor"}
-	if _, err := Default().WithSkin(s); err == nil || !strings.Contains(err.Error(), "defaultChartColors[1]") {
+	if err := s.Check(); err == nil || !strings.Contains(err.Error(), "defaultChartColors[1]") {
 		t.Errorf("a bad second color: %v", err)
 	}
 }

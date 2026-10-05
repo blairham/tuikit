@@ -128,13 +128,22 @@ stock k9s skin straight into it. tuikit itself reads no files and imports
 no YAML library — the app owns where skins live and how they are chosen.
 
 `Theme.WithSkin` maps the keys tuikit draws with onto the theme and leaves
-everything else as it was. The keys with no counterpart in tuikit's chrome
-(`body.fgColor`, dialogs, xray, charts, most status colors) are accepted
-and ignored rather than rejected, so a skin written for k9s never fails to
-load here. A few k9s colors had no theme field — the menu's keys and text,
-the table's text and header, the log text — and got optional fields that
-fall back to the color drawn before, so adding them changed no existing
-look.
+everything else as it was. `Skin` carries every key in k9s's own schema
+(`internal/config/styles.go`), so an app can decode strictly and still load
+any skin k9s loads; the keys with no counterpart in tuikit (`body.fgColor`,
+dialogs, the yaml and picker views, the log indicator, the dial and
+per-resource chart colors, most status colors) are decoded and ignored. A
+few k9s colors had no theme field — the menu's keys and text, the table's
+text and header, the log text, the xray colors the `tree` package draws —
+and got optional fields that fall back to the color drawn before, so adding
+them changed no existing look.
+
+A color `ParseColor` cannot read does not fail the skin: k9s resolves an
+unknown name to the terminal's own color, and its stock skin depends on
+that (`defaultChartColors: [linegreen, ...]`), so `WithSkin` does the same.
+`Skin.Check` lists every such key for an app that wants to warn about a
+skin. `ParseColor` is a superset of what k9s reads — any case, `#rgb`,
+`transparent` — and reads `-` and tcell's `rebeccapurple` as k9s does.
 
 `Theme.Inverted` is k9s's `--invert`: each color's OkLch lightness becomes
 `1 - L`, its hue is kept, and its chroma too — at least half of it, moving
