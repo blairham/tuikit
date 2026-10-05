@@ -173,7 +173,7 @@ func New(cfg Config) Chrome {
 // is the y/n prompt text or "" — pair it with [chrome.Confirm], passing
 // confirm.Prompt() when confirm.Active() is true. Modal is the active
 // [Modal] widget or nil; when non-nil and Modal.Active() the chrome
-// paints it centered over the content area in place of Content.
+// draws it centered over Content, which stays visible around it.
 // HelpVisible toggles the help overlay.
 // StatusBar / ErrFlash render above the footer when non-empty.
 //
@@ -345,7 +345,7 @@ func (c Chrome) Render(f Frame) string {
 	case f.HelpVisible:
 		sb.WriteString(c.renderHelpOverlay(f))
 	case f.Modal != nil && f.Modal.Active():
-		sb.WriteString(c.renderModalContent(f))
+		sb.WriteString(c.overlayModal(f.Content, f.Modal))
 	default:
 		sb.WriteString(f.Content)
 	}

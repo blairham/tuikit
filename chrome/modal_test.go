@@ -4,10 +4,13 @@
 package chrome
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	xansi "github.com/charmbracelet/x/ansi"
 
 	"github.com/blairham/tuikit/theme"
 )
@@ -75,21 +78,24 @@ func TestModal_KeysFireDispatchAndClose(t *testing.T) {
 	cases := []struct {
 		key  tea.KeyMsg
 		name string
+		opts ModalOpts
 		want bool
 	}{
 		{name: "lowercase y", key: keyChar('y'), want: true},
 		{name: "uppercase Y", key: keyChar('Y'), want: true},
-		{name: "enter", key: keyEnter(), want: true},
+		{name: "enter on default Cancel", key: keyEnter(), want: false},
+		{name: "enter with FocusOK", key: keyEnter(), opts: ModalOpts{FocusOK: true}, want: true},
 		{name: "lowercase n", key: keyChar('n'), want: false},
 		{name: "uppercase N", key: keyChar('N'), want: false},
 		{name: "esc", key: keyEsc(), want: false},
+		{name: "esc with FocusOK", key: keyEsc(), opts: ModalOpts{FocusOK: true}, want: false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			m := NewModal(theme.Default())
-			m.Open("Drop the table?", ModalOpts{})
-			var got bool
+			m.Open("Drop the table?", tc.opts)
+			got := !tc.want
 			dispatch := func(yes bool) (string, tea.Cmd) {
 				got = yes
 				return "", nil
@@ -105,6 +111,94 @@ func TestModal_KeysFireDispatchAndClose(t *testing.T) {
 				t.Errorf("%s: should close after answer", tc.name)
 			}
 		})
+	}
+}
+
+// k9s starts its delete dialog on Cancel: moving to OK takes a
+// deliberate keystroke, and only then does Enter confirm.
+func TestModal_FocusMovesBetweenButtons(t *testing.T) {
+	t.Parallel()
+	for _, move := range []tea.KeyPressMsg{keyRight(), keyTab(), keyChar('l')} {
+		m := NewModal(theme.Default())
+		m.Open("Delete?", ModalOpts{})
+		if m.OKFocused() {
+			t.Fatal("focus should start on Cancel")
+		}
+		m.Update(move, nil)
+		if !m.OKFocused() {
+			t.Fatalf("%q should move focus to OK", move.String())
+		}
+		var got bool
+		m.Update(keyEnter(), func(yes bool) (string, tea.Cmd) { got = yes; return "", nil })
+		if !got {
+			t.Errorf("enter on OK after %q should answer yes", move.String())
+		}
+	}
+	m := NewModal(theme.Default())
+	m.Open("Delete?", ModalOpts{FocusOK: true})
+	m.Update(keyLeft(), nil)
+	if m.OKFocused() {
+		t.Error("left should move focus back to Cancel")
+	}
+}
+
+func TestModal_Fields(t *testing.T) {
+	t.Parallel()
+	m := NewModal(theme.Default())
+	m.Open("Delete pod?", ModalOpts{Fields: []ModalField{
+		SelectField("propagation", "Propagation", "Background", "Foreground", "Orphan"),
+		CheckboxField("force", "Force", false),
+	}})
+	if got := m.Value("propagation"); got != "Background" {
+		t.Errorf("select should start on its first option, got %q", got)
+	}
+	// Focus starts on Cancel; shift+tab twice reaches the select, then
+	// the checkbox via tab.
+	m.Update(keyShiftTab(), nil)
+	m.Update(keyShiftTab(), nil)
+	m.Update(keyRight(), nil)
+	if got := m.Value("propagation"); got != "Foreground" {
+		t.Errorf("right on the select = %q; want Foreground", got)
+	}
+	m.Update(keyLeft(), nil)
+	m.Update(keyLeft(), nil)
+	if got := m.Value("propagation"); got != "Orphan" {
+		t.Errorf("left should wrap to the last option, got %q", got)
+	}
+	m.Update(keyTab(), nil)
+	m.Update(keyChar(' '), nil)
+	if !m.Checked("force") {
+		t.Error("space on the checkbox should check it")
+	}
+	m.Update(keyEnter(), nil)
+	if m.Checked("force") || !m.Active() {
+		t.Error("enter on a field should toggle it, not answer the dialog")
+	}
+	m.Update(keyEnter(), nil)
+
+	var force bool
+	var prop string
+	m.Update(keyChar('y'), func(bool) (string, tea.Cmd) {
+		force, prop = m.Checked("force"), m.Value("propagation")
+		return "", nil
+	})
+	if !force || prop != "Orphan" {
+		t.Errorf("dispatch should see the field values: force=%v propagation=%q", force, prop)
+	}
+	if m.Checked("force") || m.Value("propagation") != "" {
+		t.Error("Close should clear the fields")
+	}
+}
+
+func TestModal_OpenDoesNotShareFields(t *testing.T) {
+	t.Parallel()
+	fields := []ModalField{CheckboxField("force", "Force", false)}
+	m := NewModal(theme.Default())
+	m.Open("?", ModalOpts{Fields: fields})
+	m.Update(keyShiftTab(), nil)
+	m.Update(keyChar(' '), nil)
+	if fields[0].checked {
+		t.Error("toggling a field must not write through to the caller's slice")
 	}
 }
 
@@ -166,23 +260,73 @@ func TestModal_NilDispatchClosesSafely(t *testing.T) {
 	}
 }
 
-func TestChrome_RenderModalContent(t *testing.T) {
+func TestModal_ErrMsgShownInBox(t *testing.T) {
 	t.Parallel()
 	c := New(Config{Theme: theme.Default()})
 	m := NewModal(theme.Default())
-	m.Open("Session expired — refresh your login?", ModalOpts{
-		Title:       "Re-authenticate",
-		OkLabel:     "Login",
-		CancelLabel: "Skip",
+	m.Open("Delete?", ModalOpts{})
+	m.Update(keyChar('y'), func(bool) (string, tea.Cmd) { return "permission denied", nil })
+	if m.Err() != "permission denied" {
+		t.Errorf("Err() = %q", m.Err())
+	}
+	if !strings.Contains(c.renderModalBox(m, 100), "permission denied") {
+		t.Error("the dispatch error should be drawn inside the modal")
+	}
+}
+
+func TestChrome_RenderModalOverContent(t *testing.T) {
+	t.Parallel()
+	c := New(Config{Theme: theme.Default()})
+	m := NewModal(theme.Default())
+	m.Open("Delete pods distribution/trader-tools?", ModalOpts{
+		Title:  "Delete",
+		Fields: []ModalField{SelectField("p", "Propagation", "Background"), CheckboxField("f", "Force", false)},
 	})
-	out := c.renderModalContent(Frame{Modal: m, Width: 120, Height: 30})
-	if !strings.Contains(out, "Re-authenticate") {
-		t.Error("rendered modal should embed title in border")
+	rows := make([]string, 30)
+	for i := range rows {
+		rows[i] = fmt.Sprintf("row%02d %s", i, strings.Repeat("x", 110))
 	}
-	if !strings.Contains(out, "Session expired") {
-		t.Error("rendered modal should embed prompt body")
+	content := c.BorderedContent(strings.Join(rows, "\n"), 120, 30)
+	out := c.overlayModal(content, m)
+
+	if lipgloss.Width(out) != lipgloss.Width(content) || lipgloss.Height(out) != lipgloss.Height(content) {
+		t.Fatalf("overlay changed the content size: %dx%d -> %dx%d",
+			lipgloss.Width(content), lipgloss.Height(content), lipgloss.Width(out), lipgloss.Height(out))
 	}
-	if !strings.Contains(out, "Login") || !strings.Contains(out, "Skip") {
-		t.Error("rendered modal should include both button labels")
+	plain := xansi.Strip(out)
+	for _, want := range []string{"<Delete>", "Delete pods distribution/trader-tools?", "Propagation: Background", "Force: [ ]", "Cancel", "OK"} {
+		if !strings.Contains(plain, want) {
+			t.Errorf("overlay missing %q", want)
+		}
 	}
+	// The table stays visible around the box: the first and last rows
+	// are untouched, and the rows beside the box keep their edges.
+	for _, want := range []string{"row00 ", "row29 ", "row15 "} {
+		if !strings.Contains(plain, want) {
+			t.Errorf("content row %q should show around the modal", want)
+		}
+	}
+	lines := strings.Split(plain, "\n")
+	mid := lines[len(lines)/2]
+	if !strings.Contains(mid, "xxx│") && !strings.Contains(mid, "xxx ") {
+		t.Errorf("content should show on both sides of the box: %q", mid)
+	}
+}
+
+func TestChrome_RenderDrawsModalOverContent(t *testing.T) {
+	t.Parallel()
+	c := New(Config{Theme: theme.Default()})
+	m := NewModal(theme.Default())
+	m.Open("Proceed?", ModalOpts{Title: "Confirm"})
+	content := c.BorderedContent("behind the modal", 100, 20)
+	out := xansi.Strip(c.Render(Frame{Width: 100, Height: 40, Content: content, Modal: m}))
+	if !strings.Contains(out, "behind the modal") || !strings.Contains(out, "Proceed?") {
+		t.Errorf("Render should draw the modal over Content, keeping Content visible:\n%s", out)
+	}
+}
+
+func keyLeft() tea.KeyPressMsg  { return tea.KeyPressMsg{Code: tea.KeyLeft} }
+func keyRight() tea.KeyPressMsg { return tea.KeyPressMsg{Code: tea.KeyRight} }
+func keyShiftTab() tea.KeyPressMsg {
+	return tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}
 }

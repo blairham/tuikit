@@ -78,7 +78,7 @@ func TestRenderModal_TitleRowMatchesBorder(t *testing.T) {
 	c := New(Config{Theme: theme.Default()})
 	m := NewModal(theme.Default())
 	m.Open("Proceed?", ModalOpts{Title: "Confirm"})
-	lines := strings.Split(c.renderModalOverlay(m, 120, 30), "\n")
+	lines := strings.Split(c.renderModalBox(m, 116), "\n")
 	top := -1
 	for i, l := range lines {
 		if strings.Contains(l, "Confirm") {

@@ -8,6 +8,21 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Changed
+
+- `chrome.Modal` is now the k9s dialog: it draws over `Content` (which
+  stays visible around it) instead of replacing it, its buttons are one
+  row, and **focus starts on Cancel** — Enter presses the focused button,
+  so it no longer means yes by default. `ModalOpts.FocusOK` starts on OK.
+  `y`/`n`/esc answer as before. A dispatch error is now shown inside the
+  dialog (`Modal.Err`).
+
+### Added
+
+- `chrome.SelectField` / `chrome.CheckboxField` form rows for `Modal`
+  (k9s's "Propagation" and "Force"), read with `Modal.Value` /
+  `Modal.Checked` in the dispatch; tab/arrows move focus, space toggles.
+
 ## [0.0.23] - 2026-10-04
 
 ### Fixed
