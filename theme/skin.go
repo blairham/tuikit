@@ -15,10 +15,11 @@ import (
 
 // Skin is k9s's skin schema — the part under the file's top-level "k9s:"
 // key — as Go structs with yaml tags, field for field with k9s's own, so
-// an app unmarshals a k9s skin file straight into one, strict decoding
-// included, and every stock k9s skin works unchanged. tuikit reads no
-// files and parses no YAML; the app does both. Colors are written as
-// [ParseColor] reads them.
+// an app unmarshals a k9s skin file straight into one and every stock k9s
+// skin works unchanged. tuikit reads no files and parses no YAML; the app
+// does both. Decode as k9s does, ignoring unknown keys: a few stock skins
+// carry misspelled keys k9s never reads ("highlightcolor", "colorColor").
+// Colors are written as [ParseColor] reads them.
 //
 // [Theme.WithSkin] applies the colors tuikit draws with. A key with no
 // counterpart in tuikit — body.fgColor, the dialog, the yaml, picker and
@@ -190,13 +191,15 @@ type SkinTableHeader struct {
 	SelectedSortColumnColor string `yaml:"selectedSortColumnColor"`
 }
 
-// SkinXray is k9s.views.xray, which the tree package draws.
+// SkinXray is k9s.views.xray, which the tree package draws. ShowIcons is
+// whether k9s puts an icon before each node; the tree draws none.
 type SkinXray struct {
 	FgColor         string `yaml:"fgColor"`
 	BgColor         string `yaml:"bgColor"`
 	CursorColor     string `yaml:"cursorColor"`
 	CursorTextColor string `yaml:"cursorTextColor"`
 	GraphicColor    string `yaml:"graphicColor"`
+	ShowIcons       bool   `yaml:"showIcons"`
 }
 
 // SkinYaml is k9s.views.yaml, the resource describe and yaml views.

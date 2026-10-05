@@ -258,7 +258,7 @@ k9s:
       cursorColor: aqua
       markColor: palegreen
       header: {fgColor: white, bgColor: black, sorterColor: aqua, selectedSortColumnColor: orange}
-    xray: {fgColor: blue, bgColor: black, cursorColor: aqua, cursorTextColor: black, graphicColor: darkgoldenrod}
+    xray: {fgColor: blue, bgColor: black, cursorColor: aqua, cursorTextColor: black, graphicColor: darkgoldenrod, showIcons: true}
     charts:
       bgColor: default
       dialBgColor: black
@@ -295,7 +295,7 @@ func TestSkinDecodesEveryK9sKey(t *testing.T) {
 	if s.Body.FgColor != "#c0c0c0" || s.Frame.Menu.FgStyle != "dim" ||
 		s.Views.Logs.Indicator.ToggleOnColor != "limegreen" ||
 		len(s.Views.Charts.ResourceColors["v1/pods"]) != 2 ||
-		s.Dialog.ButtonFocusBgColor != "fuchsia" {
+		s.Dialog.ButtonFocusBgColor != "fuchsia" || !s.Views.Xray.ShowIcons {
 		t.Errorf("decoded %+v", s)
 	}
 	if err := s.Check(); err != nil {

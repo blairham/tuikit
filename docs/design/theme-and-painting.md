@@ -129,8 +129,10 @@ no YAML library — the app owns where skins live and how they are chosen.
 
 `Theme.WithSkin` maps the keys tuikit draws with onto the theme and leaves
 everything else as it was. `Skin` carries every key in k9s's own schema
-(`internal/config/styles.go`), so an app can decode strictly and still load
-any skin k9s loads; the keys with no counterpart in tuikit (`body.fgColor`,
+(`internal/config/styles.go`) plus xray's `showIcons`, so nothing k9s reads
+is lost. Decode as k9s does, ignoring unknown keys — a few stock skins carry
+misspelled keys k9s never reads (`highlightcolor`, `colorColor`, a
+`views.help` section); the keys with no counterpart in tuikit (`body.fgColor`,
 dialogs, the yaml and picker views, the log indicator, the dial and
 per-resource chart colors, most status colors) are decoded and ignored. A
 few k9s colors had no theme field — the menu's keys and text, the table's

@@ -30,8 +30,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
   `views.xray`, `views.yaml`, `views.picker`, `views.logs.indicator`, the
   logo's message colors, `info`'s CPU, memory and revision colors, the
   chart dial, background, focus and per-resource colors, and
-  `selectedSortColumnColor` — so all 43 of k9s's stock skins decode with
-  unknown fields refused.
+  `selectedSortColumnColor`, xray's `showIcons` — so every key k9s reads
+  has a field, and an app can decode a stock skin without losing any.
 - `theme`: `Skin.Check` names every color in a skin that does not parse.
 - `theme`/`tree`: a skin's `views.xray` colors draw the tree — label,
   cursor row, cursor text and guides — through the new optional
