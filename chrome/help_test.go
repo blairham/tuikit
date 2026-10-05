@@ -4,6 +4,7 @@
 package chrome
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -123,5 +124,104 @@ func TestHelpSectionNeverWraps(t *testing.T) {
 		if w := lipgloss.Width(strings.TrimRight(l, " ")); w > colWidth-1 {
 			t.Errorf("%q is %d wide; the last cell must stay clear before the next column", l, w)
 		}
+	}
+}
+
+// helpSection is a test section of n entries, keys and descriptions named
+// after the section so a cut one is easy to find.
+func helpSection(title string, n int) HelpSection {
+	s := HelpSection{Title: title}
+	for i := range n {
+		s.Entries = append(
+			s.Entries,
+			HelpEntry{Key: fmt.Sprintf("<%s%d>", strings.ToLower(title[:1]), i), Desc: fmt.Sprintf("%s entry %d", title, i)},
+		)
+	}
+	return s
+}
+
+// TestHelpOverlayFitsWithExtraSections: an app's PLUGINS and HOTKEYS
+// sections beyond the four that fit 120 columns stack under the shortest
+// columns instead of widening the row past the screen, every entry stays
+// whole, and the overlay is no taller than the content area.
+func TestHelpOverlayFitsWithExtraSections(t *testing.T) {
+	t.Parallel()
+	c := New(Config{Theme: theme.Default()})
+	sections := []HelpSection{
+		helpSection("RESOURCE", 18), helpSection("CONTAINER", 20), helpSection("GENERAL", 16),
+		helpSection("NAVIGATION", 11), helpSection("PLUGINS", 3), helpSection("HOTKEYS", 2),
+	}
+	f := Frame{Width: 120, Height: 40, Help: HelpPanel{Sections: sections}}
+	_, innerH := c.ContentInnerSize(f.Width, f.Height, false, false, false, false)
+	out := ansi.Strip(c.renderHelpOverlay(f))
+	lines := strings.Split(out, "\n")
+	if len(lines) != innerH+2 {
+		t.Errorf("overlay is %d lines, want the content area's %d", len(lines), innerH+2)
+	}
+	for _, l := range lines {
+		if w := ansi.StringWidth(l); w > f.Width {
+			t.Fatalf("a line is %d cells wide, past the %d-cell screen: %q", w, f.Width, l)
+		}
+	}
+	for _, s := range sections {
+		if !strings.Contains(out, s.Title) {
+			t.Errorf("section %s is missing", s.Title)
+		}
+		for _, e := range s.Entries {
+			found := false
+			for _, l := range lines {
+				if i := strings.Index(l, e.Key); i >= 0 && strings.Contains(l[i:], e.Desc) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("%s %q is cut or missing", e.Key, e.Desc)
+			}
+		}
+	}
+	// PLUGINS goes under the shortest column, NAVIGATION (11 entries).
+	for _, l := range lines {
+		if strings.Contains(l, "PLUGINS") && !strings.Contains(l, "<r") && !strings.Contains(l, "<c") {
+			t.Errorf("PLUGINS is not stacked beside the taller columns: %q", l)
+		}
+	}
+}
+
+// TestHelpOverlayClampsToHeight: sections taller than the content area are
+// cut to it rather than pushing the frame past the terminal.
+func TestHelpOverlayClampsToHeight(t *testing.T) {
+	t.Parallel()
+	c := New(Config{Theme: theme.Default()})
+	f := Frame{Width: 120, Height: 30, Help: HelpPanel{Sections: []HelpSection{helpSection("TALL", 60)}}}
+	_, innerH := c.ContentInnerSize(f.Width, f.Height, false, false, false, false)
+	if got := len(strings.Split(c.renderHelpOverlay(f), "\n")); got != innerH+2 {
+		t.Errorf("overlay is %d lines, want %d", got, innerH+2)
+	}
+}
+
+// TestHelpOverlayCountsTheBlankRow: a stacked section adds its blank row to
+// its column's height, so the next one goes under the column that is
+// really shortest. Two columns of 10 and 12 rows: X (2 rows) stacks under
+// the first, making it 13 with the blank, so Y goes under the second.
+func TestHelpOverlayCountsTheBlankRow(t *testing.T) {
+	t.Parallel()
+	c := New(Config{Theme: theme.Default()})
+	f := Frame{Width: 60, Height: 50, Help: HelpPanel{Sections: []HelpSection{
+		helpSection("ALPHA", 9), helpSection("BRAVO", 11), helpSection("XRAY", 1), helpSection("YANKEE", 1),
+	}}}
+	out := ansi.Strip(c.renderHelpOverlay(f))
+	col := func(title string) int {
+		for _, l := range strings.Split(out, "\n") {
+			if i := strings.Index(l, title); i >= 0 {
+				return ansi.StringWidth(l[:i])
+			}
+		}
+		t.Fatalf("%s not drawn", title)
+		return -1
+	}
+	if col("XRAY") != col("ALPHA") || col("YANKEE") != col("BRAVO") {
+		t.Errorf("XRAY under col %d (ALPHA %d), YANKEE under col %d (BRAVO %d)",
+			col("XRAY"), col("ALPHA"), col("YANKEE"), col("BRAVO"))
 	}
 }
