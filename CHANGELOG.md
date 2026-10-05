@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.23] - 2026-10-04
+
 ### Fixed
 
 - `chrome`: the help overlay lays sections out in as many columns as fit
