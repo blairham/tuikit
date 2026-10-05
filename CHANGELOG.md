@@ -16,12 +16,29 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
   so it no longer means yes by default. `ModalOpts.FocusOK` starts on OK.
   `y`/`n`/esc answer as before. A dispatch error is now shown inside the
   dialog (`Modal.Err`).
+- `theme`: `Theme.WithSkin` returns only the theme. A color that does not
+  parse is drawn in the terminal's own color, as k9s draws it, instead of
+  failing the skin — k9s's own `stock` and `red` skins name `linegreen`
+  and were refused.
 
 ### Added
 
 - `chrome.SelectField` / `chrome.CheckboxField` form rows for `Modal`
   (k9s's "Propagation" and "Force"), read with `Modal.Value` /
   `Modal.Checked` in the dispatch; tab/arrows move focus, space toggles.
+- `theme`: `Skin` carries every key in k9s's skin schema — `dialog`,
+  `views.xray`, `views.yaml`, `views.picker`, `views.logs.indicator`, the
+  logo's message colors, `info`'s CPU, memory and revision colors, the
+  chart dial, background, focus and per-resource colors, and
+  `selectedSortColumnColor`, xray's `showIcons` — so every key k9s reads
+  has a field, and an app can decode a stock skin without losing any.
+- `theme`: `Skin.Check` names every color in a skin that does not parse.
+- `theme`/`tree`: a skin's `views.xray` colors draw the tree — label,
+  cursor row, cursor text and guides — through the new optional
+  `XrayText`, `XrayCursor`, `XrayCursorText` and `XrayGraphic` fields,
+  each falling back to the color the tree drew before.
+- `theme`: `ParseColor` reads `-` as the terminal's own color and
+  `rebeccapurple`, as k9s does.
 
 ## [0.0.23] - 2026-10-04
 

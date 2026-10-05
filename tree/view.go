@@ -30,12 +30,12 @@ type styles struct {
 
 func newStyles(t theme.Theme) styles {
 	s := styles{
-		guide: t.MutedStyle,
+		guide: t.On(t.XrayGraphicColor()),
 		selected: lipgloss.NewStyle().
-			Background(t.Selection).
-			Foreground(t.SelectionTextColor()).
+			Background(t.XrayCursorColor()).
+			Foreground(t.XrayCursorTextColor()).
 			Bold(true),
-		textOn: openSeq(t.On(t.TableTextColor())),
+		textOn: openSeq(t.On(t.XrayTextColor())),
 	}
 	if t.PaintBackground {
 		s.bgOn = theme.BackgroundSeq(t.Bg)

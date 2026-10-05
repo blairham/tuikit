@@ -77,6 +77,13 @@ type Theme struct {
 	// views.table.cursorFgColor); nil uses black.
 	SelectionText color.Color
 	LogText       color.Color // log line text an app draws without its own color; nil uses Selection
+	// The tree package's colors, k9s's views.xray. Read them through
+	// [Theme.XrayTextColor] and its siblings; each falls back to the
+	// table's color for the same part.
+	XrayText       color.Color // node labels; nil uses the table text color
+	XrayCursor     color.Color // the cursor row's background; nil uses Selection
+	XrayCursorText color.Color // the cursor row's text; nil uses the selection text color
+	XrayGraphic    color.Color // guides and ▸/▾ markers; nil uses Muted
 	// Breadcrumb pills, k9s's frame.crumbs: black on aqua for the trail,
 	// black on orange for the current view.
 	BreadcrumbBg     color.Color // pill bg for the trail (k9s: aqua)
@@ -175,6 +182,24 @@ func (t Theme) TableTextColor() color.Color { return or(t.TableText, t.Selection
 func (t Theme) SelectionTextColor() color.Color {
 	return or(t.SelectionText, lipgloss.Color("#000000"))
 }
+
+// XrayTextColor is the tree's label color: [Theme.XrayText], or
+// [Theme.TableTextColor] when unset.
+func (t Theme) XrayTextColor() color.Color { return or(t.XrayText, t.TableTextColor()) }
+
+// XrayCursorColor is the tree cursor row's background: [Theme.XrayCursor],
+// or [Theme.Selection] when unset.
+func (t Theme) XrayCursorColor() color.Color { return or(t.XrayCursor, t.Selection) }
+
+// XrayCursorTextColor is the tree cursor row's text:
+// [Theme.XrayCursorText], or [Theme.SelectionTextColor] when unset.
+func (t Theme) XrayCursorTextColor() color.Color {
+	return or(t.XrayCursorText, t.SelectionTextColor())
+}
+
+// XrayGraphicColor is the tree's guides and markers: [Theme.XrayGraphic],
+// or [Theme.Muted] when unset.
+func (t Theme) XrayGraphicColor() color.Color { return or(t.XrayGraphic, t.Muted) }
 
 // TableHeaderColor is the table header text color: [Theme.TableHeader],
 // or [Theme.Value] when unset.

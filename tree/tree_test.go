@@ -689,3 +689,29 @@ func TestViewBeforeResize(t *testing.T) {
 		t.Errorf("View before Resize = %q, want \"\"", v)
 	}
 }
+
+// TestXrayColors: a skin's views.xray colors reach the drawn rows — the
+// guides, the labels, and the cursor row.
+func TestXrayColors(t *testing.T) {
+	th := theme.Default().WithSkin(theme.Skin{Views: theme.SkinViews{Xray: theme.SkinXray{
+		FgColor:         "#102030",
+		CursorColor:     "#405060",
+		CursorTextColor: "#708090",
+		GraphicColor:    "#a0b0c0",
+	}}})
+	m := New(th)
+	m.SetDefaultDepth(-1)
+	m.SetRoots(sample())
+	m.Resize(40, 10)
+	view := m.View()
+	for name, sgr := range map[string]string{
+		"text":        "38;2;16;32;48",
+		"cursor":      "48;2;64;80;96",
+		"cursor text": "38;2;112;128;144",
+		"graphic":     "38;2;160;176;192",
+	} {
+		if !strings.Contains(view, sgr) {
+			t.Errorf("%s color %s not drawn in %q", name, sgr, view)
+		}
+	}
+}

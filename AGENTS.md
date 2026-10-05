@@ -52,7 +52,7 @@ Eight composable packages under one module, all rooted on `theme`. Apps import w
 
 | Package | Role |
 |---|---|
-| `theme/` | Color palette + lipgloss styles + the `Theme` struct apps inject at construction (the DI seed every other package reads from). |
+| `theme/` | Color palette + lipgloss styles + the `Theme` struct apps inject at construction (the DI seed every other package reads from), and `Skin`: k9s's full skin schema, applied with `Theme.WithSkin`. |
 | `chrome/` | The visual frame: top section, bordered content, footer, filter / command / confirm bars, `Modal` (centered popup), `Prompt` (one-shot prefilled text input), the `VersionLine` info row, the help overlay, and `SaveDump` (ctrl+s: write a view to a plain-text file). |
 | `table/` | Themed `bubbles/v2/table` styles, the `FixSelectedRow` ANSI fix, a `RowFilter`, a `Sorter` (shift+←/→ sort column, stable sort, header indicator), `Marks` (space / ctrl+space / ctrl+\ row marks keyed to survive re-sorts), and `PlainText` (every row as aligned text, for saving). |
 | `tail/` | Viewport + follow-mode + `RowFilter` for log streams, and a search (`SetSearch`, `NextMatch`/`PrevMatch`) that highlights matches without hiding lines. |
