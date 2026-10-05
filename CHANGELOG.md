@@ -8,6 +8,14 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Fixed
+
+- `chrome`: the help overlay lays sections out in as many columns as fit
+  (at least 25 cells each) and stacks the rest under the shortest columns,
+  instead of widening the row past the screen and cutting every
+  description; and it is cut to the content area's height rather than
+  pushing the frame past the terminal.
+
 ## [0.0.22] - 2026-10-04
 
 ### Added

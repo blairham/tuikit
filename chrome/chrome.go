@@ -845,15 +845,7 @@ func (c Chrome) renderHelpOverlay(f Frame) string {
 		return InjectBorderTitleColor(box, c.helpTitleStyle().Render("help"), c.Theme.HelpBorder, c.Theme)
 	}
 
-	colWidth := (width - 8) / len(f.Help.Sections)
-	if colWidth < 25 {
-		colWidth = 25
-	}
-	cols := make([]string, 0, len(f.Help.Sections))
-	for _, section := range f.Help.Sections {
-		cols = append(cols, c.renderHelpSection(section, colWidth))
-	}
-	body := lipgloss.JoinHorizontal(lipgloss.Top, cols...)
+	body := c.helpColumns(f.Help.Sections, width-8, innerH)
 	box := c.helpBorderedContent(body, width-2, innerH)
 	return InjectBorderTitleColor(box, c.helpTitleStyle().Render("help"), c.Theme.HelpBorder, c.Theme)
 }
@@ -864,6 +856,57 @@ func (c Chrome) renderHelpOverlay(f Frame) string {
 // elsewhere in the chrome.
 func (c Chrome) helpTitleStyle() lipgloss.Style {
 	return c.Theme.On(c.Theme.HelpTitle).Bold(true)
+}
+
+// minHelpColumn is the narrowest a help column is drawn: a key and a few
+// words of description.
+const minHelpColumn = 25
+
+// helpColumns lays the sections out in as many columns as fit width, each
+// at least minHelpColumn wide. When there are more sections than columns,
+// each extra one is stacked under the column that is shortest so far, a
+// blank row between — an app's PLUGINS or HOTKEYS column used to make the
+// row wider than the screen and cut every description. The body is cut to
+// height rows, so the overlay never pushes the frame past the terminal.
+func (c Chrome) helpColumns(sections []HelpSection, width, height int) string {
+	n := min(len(sections), max(1, width/minHelpColumn))
+	colWidth := max(width/n, minHelpColumn)
+	stacks := make([][]HelpSection, n)
+	rows := make([]int, n)
+	for i, s := range sections {
+		col := i
+		if i >= n {
+			col = 0
+			for j := range rows {
+				if rows[j] < rows[col] {
+					col = j
+				}
+			}
+			rows[col]++ // the blank row between stacked sections
+		}
+		stacks[col] = append(stacks[col], s)
+		rows[col] += 1 + len(s.Entries)
+	}
+	cols := make([]string, 0, n)
+	for _, stack := range stacks {
+		parts := make([]string, 0, 2*len(stack))
+		for k, s := range stack {
+			if k > 0 {
+				parts = append(parts, "")
+			}
+			parts = append(parts, strings.TrimRight(c.renderHelpSection(s, colWidth), "\n"))
+		}
+		colStyle := lipgloss.NewStyle().Width(colWidth)
+		if c.Theme.PaintBackground {
+			colStyle = colStyle.Background(c.Theme.Bg)
+		}
+		cols = append(cols, colStyle.Render(strings.Join(parts, "\n")))
+	}
+	body := lipgloss.JoinHorizontal(lipgloss.Top, cols...)
+	if lines := strings.Split(body, "\n"); height > 0 && len(lines) > height {
+		body = strings.Join(lines[:height], "\n")
+	}
+	return body
 }
 
 // helpBorderedContent wraps content in a help-overlay border whose
