@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.24] - 2026-10-05
+
 ### Changed
 
 - `chrome.Modal` is now the k9s dialog: it draws over `Content` (which
