@@ -186,3 +186,29 @@ The bar handles a single mode — a `:` palette with optional suggestions.
 Modal variants (y/n confirms via `chrome.Confirm`, save-as prompts,
 in-place value edits) are intentionally separate sibling widgets, not
 modes of the command bar.
+
+## `chrome.Modal`: the k9s dialog
+
+`Frame.Modal` draws a bordered dialog **over** `Content` — the table stays
+visible around it, as in k9s's delete / restart / scale popups. The box is
+composited with lipgloss's cell compositor onto the already-rendered
+content and clipped to it, so an open modal never changes the frame's
+height and needs no reservation in `ContentInnerSize`.
+
+The dialog is a message, optional form rows (`SelectField` — k9s's
+"Propagation: Background" — and `CheckboxField` — "Force:"), and a
+one-row Cancel / OK pair. **Focus starts on Cancel**, as in k9s, so an
+Enter that was meant for the table never confirms a delete; `FocusOK`
+flips that for prompts where OK is the safe answer. tab/shift+tab and
+up/down walk fields then buttons, left/right step a select or move
+between the buttons, space toggles, esc cancels, and `y`/`n` answer
+directly — the same accelerators as `chrome.Confirm`, so an app moving a
+prompt from the bar to the modal keeps its muscle memory.
+
+The dispatch reads field values with `Modal.Value` / `Modal.Checked`
+before the modal closes. A non-empty error from the dispatch keeps the
+dialog open and is drawn inside it, in `Status.Error`.
+
+Colors follow k9s's default dialog skin through existing theme fields:
+`Border` for the frame and the focused button, `HelpTitle` for the
+`<Title>`, `HelpDesc` for the message, `Value` for labels.

@@ -12,41 +12,85 @@ import (
 	"github.com/blairham/tuikit/theme"
 )
 
-// Modal is a centered popup confirmation widget. Where [Confirm] reserves
-// a bordered strip at the bottom of the screen, Modal renders as a small
-// bordered box overlaid on the content area — the shape k9s uses for
-// delete/restart prompts. Apps reach for Modal when the prompt warrants
-// a visual interrupt; Confirm stays the right choice for inline yes/no.
+// Modal is a centered popup dialog drawn over the content area — the
+// shape k9s uses for its delete / restart / scale prompts. Where
+// [Confirm] reserves a strip at the top of the screen, Modal floats a
+// bordered box over the table, which stays visible around it.
 //
-// Keys match [Confirm]: y/Y/Enter = yes, n/N/Esc = no, others swallowed.
-// The visual difference is layout only — same single-keystroke semantics.
+// A dialog has a message, optional form fields ([SelectField],
+// [CheckboxField]) and a Cancel / OK button pair. As in k9s, focus
+// starts on Cancel, so a stray Enter never confirms a destructive
+// action; set [ModalOpts.FocusOK] for prompts where OK is the safe
+// default.
+//
+// Keys:
+//
+//   - tab / down, shift+tab / up: move focus through fields and buttons.
+//   - left / right: on the buttons, move between them; on a select
+//     field, step through its options.
+//   - space: toggle a checkbox, step a select forward.
+//   - enter: press the focused button; on a field, act like space.
+//   - esc: cancel. y / Y answer yes and n / N answer no from anywhere,
+//     the same accelerators [Confirm] takes.
+//
+// Every other key is swallowed while the modal is open.
 type Modal struct {
 	theme       theme.Theme
 	title       string
 	prompt      string
 	okLabel     string
 	cancelLabel string
+	errMsg      string
+	fields      []ModalField
+	focus       int
 	active      bool
 }
 
-// ModalDispatch is the callback invoked with the y/n result. Identical
-// semantics to [ConfirmDispatch]: non-empty errMsg keeps the modal open
-// so the user can re-answer; "" closes it.
+// ModalDispatch is the callback invoked with the dialog's answer. Read
+// the field values with [Modal.Value] and [Modal.Checked] inside it —
+// they are cleared when the modal closes. A non-empty errMsg keeps the
+// modal open and shows the message inside it, so the user can change a
+// field or re-answer; "" closes it.
 type ModalDispatch func(yes bool) (errMsg string, cmd tea.Cmd)
 
-// ModalOpts customizes the per-Open title and button labels. Zero values
-// fall back to "Confirm" / "OK" / "Cancel".
+// ModalOpts customizes one Open. Zero values fall back to "Confirm" /
+// "OK" / "Cancel", no fields, and focus on Cancel.
 type ModalOpts struct {
 	Title       string
 	OkLabel     string
 	CancelLabel string
+	// Fields are the form rows drawn between the message and the
+	// buttons, in focus order.
+	Fields []ModalField
+	// FocusOK starts focus on OK instead of Cancel.
+	FocusOK bool
 }
 
-// NewModal returns a Modal ready for use. The rendered border + buttons
-// use the theme's chrome palette (Theme.Border for the frame, Theme.Title
-// for the centered title pill) so the popup looks like a sibling of the
-// other bordered content surfaces. Apps that want a different palette
-// can recolor by constructing their own Theme.
+// ModalField is one form row in a [Modal]: a select (one of Options)
+// or a checkbox. Build them with [SelectField] and [CheckboxField].
+type ModalField struct {
+	Key      string
+	Label    string
+	Options  []string
+	selected int
+	checkbox bool
+	checked  bool
+}
+
+// SelectField returns a field that cycles through options, starting on
+// the first — k9s's "Propagation: Background" row. Read the choice
+// with [Modal.Value](key).
+func SelectField(key, label string, options ...string) ModalField {
+	return ModalField{Key: key, Label: label, Options: options}
+}
+
+// CheckboxField returns an on/off field — k9s's "Force:" row. Read it
+// with [Modal.Checked](key).
+func CheckboxField(key, label string, checked bool) ModalField {
+	return ModalField{Key: key, Label: label, checkbox: true, checked: checked}
+}
+
+// NewModal returns a Modal ready for use.
 func NewModal(t theme.Theme) *Modal {
 	return &Modal{theme: t}
 }
@@ -54,33 +98,33 @@ func NewModal(t theme.Theme) *Modal {
 // Active reports whether the modal is currently open.
 func (m *Modal) Active() bool { return m.active }
 
-// Open activates the modal with the given prompt + per-open options.
-// Pass just the question text — the chrome adds the surrounding border,
-// title, and button row automatically.
+// Open activates the modal with the given message and options. Pass
+// just the question text — the chrome draws the border, title, fields
+// and buttons.
 func (m *Modal) Open(prompt string, opts ModalOpts) {
 	m.active = true
 	m.prompt = prompt
-	m.title = opts.Title
-	if m.title == "" {
-		m.title = "Confirm"
-	}
-	m.okLabel = opts.OkLabel
-	if m.okLabel == "" {
-		m.okLabel = "OK"
-	}
-	m.cancelLabel = opts.CancelLabel
-	if m.cancelLabel == "" {
-		m.cancelLabel = "Cancel"
+	m.errMsg = ""
+	m.title = or(opts.Title, "Confirm")
+	m.okLabel = or(opts.OkLabel, "OK")
+	m.cancelLabel = or(opts.CancelLabel, "Cancel")
+	m.fields = append([]ModalField(nil), opts.Fields...)
+	m.focus = m.cancelIndex()
+	if opts.FocusOK {
+		m.focus = m.okIndex()
 	}
 }
 
-// Close deactivates the modal and clears the stored prompt.
+func or(s, fallback string) string {
+	if s == "" {
+		return fallback
+	}
+	return s
+}
+
+// Close deactivates the modal and clears its state.
 func (m *Modal) Close() {
-	m.active = false
-	m.prompt = ""
-	m.title = ""
-	m.okLabel = ""
-	m.cancelLabel = ""
+	*m = Modal{theme: m.theme}
 }
 
 // Prompt returns the active question text ("" when inactive).
@@ -89,12 +133,39 @@ func (m *Modal) Prompt() string { return m.prompt }
 // Title returns the active modal title ("" when inactive).
 func (m *Modal) Title() string { return m.title }
 
-// Update consumes a single tea.KeyMsg.
-//
-//   - y / Y / enter: dispatch(true).
-//   - n / N / esc:   dispatch(false).
-//   - any other key: swallowed, returns handled=true, no dispatch.
-//
+// Err returns the message the last dispatch kept the modal open with.
+func (m *Modal) Err() string { return m.errMsg }
+
+// Value returns the selected option of the select field key, or "" if
+// there is no such select field.
+func (m *Modal) Value(key string) string {
+	for _, f := range m.fields {
+		if f.Key == key && !f.checkbox && len(f.Options) > 0 {
+			return f.Options[f.selected]
+		}
+	}
+	return ""
+}
+
+// Checked reports whether the checkbox field key is on.
+func (m *Modal) Checked(key string) bool {
+	for _, f := range m.fields {
+		if f.Key == key && f.checkbox {
+			return f.checked
+		}
+	}
+	return false
+}
+
+// Focus order is the fields, then Cancel, then OK.
+func (m *Modal) cancelIndex() int { return len(m.fields) }
+func (m *Modal) okIndex() int     { return len(m.fields) + 1 }
+func (m *Modal) focusables() int  { return len(m.fields) + 2 }
+
+// OKFocused reports whether focus is on the OK button.
+func (m *Modal) OKFocused() bool { return m.active && m.focus == m.okIndex() }
+
+// Update consumes a single tea.KeyMsg; see [Modal] for the keys.
 // Non-KeyMsg messages are not consumed (handled=false). When inactive,
 // Update is a no-op and returns handled=false.
 func (m *Modal) Update(msg tea.Msg, dispatch ModalDispatch) (handled bool, cmd tea.Cmd) {
@@ -105,13 +176,52 @@ func (m *Modal) Update(msg tea.Msg, dispatch ModalDispatch) (handled bool, cmd t
 	if !ok {
 		return false, nil
 	}
+	onField := m.focus < len(m.fields)
 	switch key.String() {
-	case "y", "Y", keyStrEnter:
+	case "y", "Y":
 		return true, m.fire(dispatch, true)
 	case "n", "N", keyStrEsc:
 		return true, m.fire(dispatch, false)
+	case "tab", "down":
+		m.focus = (m.focus + 1) % m.focusables()
+	case "shift+tab", "up":
+		m.focus = (m.focus + m.focusables() - 1) % m.focusables()
+	case "left", "h":
+		if onField {
+			m.step(-1)
+		} else {
+			m.focus = m.cancelIndex()
+		}
+	case "right", "l":
+		if onField {
+			m.step(1)
+		} else {
+			m.focus = m.okIndex()
+		}
+	case "space":
+		if onField {
+			m.step(1)
+		}
+	case keyStrEnter:
+		if onField {
+			m.step(1)
+			return true, nil
+		}
+		return true, m.fire(dispatch, m.focus == m.okIndex())
 	}
 	return true, nil
+}
+
+// step toggles the focused checkbox or moves the focused select by d.
+func (m *Modal) step(d int) {
+	f := &m.fields[m.focus]
+	if f.checkbox {
+		f.checked = !f.checked
+		return
+	}
+	if n := len(f.Options); n > 0 {
+		f.selected = (f.selected + d + n) % n
+	}
 }
 
 func (m *Modal) fire(dispatch ModalDispatch, yes bool) tea.Cmd {
@@ -121,137 +231,124 @@ func (m *Modal) fire(dispatch ModalDispatch, yes bool) tea.Cmd {
 	}
 	errMsg, cmd := dispatch(yes)
 	if errMsg != "" {
+		m.errMsg = errMsg
 		return cmd
 	}
 	m.Close()
 	return cmd
 }
 
-// renderModalContent fills the content area with a centered modal box.
-// Called from [Chrome.Render] when [Frame.Modal] is active; replaces
-// the normal Content rendering rather than overlaying it (lipgloss has
-// no cell-level compositor). The modal canvas is wrapped in the same
-// [Chrome.BorderedContent] frame the app would have rendered behind it,
-// so the exterior chrome border stays visible while the modal is open.
-//
-// The bordered wrapper spans the full f.Width — matching the convention
-// apps use for normal Content — so the right edge lines
-// up with the top section and bars rather than leaving a 2-cell gap.
-func (c Chrome) renderModalContent(f Frame) string {
-	_, innerH := c.ContentInnerSize(
-		f.Width, f.Height,
-		f.Filter != nil, f.Command != nil, f.Confirm != "", f.StatusBar != "",
-	)
-	canvasW := f.Width - 2
-	if canvasW < 10 {
-		canvasW = 10
+// overlayModal draws the modal box over content, centered in it, and
+// returns content with the box composited on top. The result keeps
+// content's exact dimensions: the box is clipped rather than allowed to
+// grow the frame.
+func (c Chrome) overlayModal(content string, m *Modal) string {
+	w, h := lipgloss.Width(content), lipgloss.Height(content)
+	if w == 0 || h == 0 {
+		return content
 	}
-	canvas := c.renderModalOverlay(f.Modal, canvasW, innerH)
-	return c.BorderedContent(canvas, f.Width, innerH)
+	box := c.renderModalBox(m, w-4)
+	x := max((w-lipgloss.Width(box))/2, 0)
+	y := max((h-lipgloss.Height(box))/2, 0)
+	comp := lipgloss.NewCompositor(
+		lipgloss.NewLayer(content),
+		lipgloss.NewLayer(box).X(x).Y(y).Z(1),
+	)
+	return lipgloss.NewCanvas(w, h).Compose(comp).Render()
 }
 
-// renderModalOverlay returns a rendering of the modal box placed at the
-// center of an areaW × areaH cell. The caller stitches this into the
-// frame in place of the normal Content rendering when Modal.Active().
-func (c Chrome) renderModalOverlay(m *Modal, areaW, areaH int) string {
-	// Pick a modal width: wide enough for the prompt but capped so the
-	// shape stays compact. ~60% of the area, with sane floor/ceiling.
-	boxW := areaW * 6 / 10
-	if boxW < 36 {
-		boxW = 36
-	}
-	if boxW > 80 {
-		boxW = 80
-	}
-	if boxW > areaW-4 {
-		boxW = areaW - 4
-	}
-	if boxW < 20 {
-		boxW = 20
-	}
-
+// renderModalBox renders the bordered dialog at most maxW cells wide.
+func (c Chrome) renderModalBox(m *Modal, maxW int) string {
+	t := c.Theme
+	// ~72 cells is the width k9s gives its delete dialog; shrink to fit.
+	boxW := min(72, maxW)
+	boxW = max(boxW, 20)
 	innerW := boxW - 4 // -2 border, -2 horizontal padding
-	if innerW < 10 {
-		innerW = 10
+
+	line := func(s lipgloss.Style) lipgloss.Style {
+		s = s.Width(innerW)
+		if t.PaintBackground {
+			s = s.Background(t.Bg)
+		}
+		return s
 	}
+	blank := line(lipgloss.NewStyle()).Render("")
 
-	body := WrapText(m.prompt, innerW)
-	bodyStyle := lipgloss.NewStyle().Width(innerW).Foreground(c.Theme.Value)
-	if c.Theme.PaintBackground {
-		bodyStyle = bodyStyle.Background(c.Theme.Bg)
+	rows := []string{
+		blank,
+		line(lipgloss.NewStyle().Foreground(t.HelpDesc).Align(lipgloss.Center)).
+			Render(WrapText(m.prompt, innerW)),
+		blank,
 	}
-
-	buttons := c.renderModalButtons(m, innerW)
-
-	gapStyle := lipgloss.NewStyle().Width(innerW)
-	if c.Theme.PaintBackground {
-		gapStyle = gapStyle.Background(c.Theme.Bg)
+	for i, f := range m.fields {
+		rows = append(rows, c.renderModalField(f, i == m.focus, innerW))
 	}
-	gap := gapStyle.Render("")
-
-	content := strings.Join([]string{
-		bodyStyle.Render(body),
-		gap,
-		buttons,
-	}, "\n")
+	if len(m.fields) > 0 {
+		rows = append(rows, blank)
+	}
+	if m.errMsg != "" {
+		rows = append(rows,
+			line(lipgloss.NewStyle().Foreground(t.Status.Error).Align(lipgloss.Center)).
+				Render(WrapText(m.errMsg, innerW)),
+			blank)
+	}
+	rows = append(rows, c.renderModalButtons(m, innerW))
 
 	box := lipgloss.NewStyle().
 		Width(boxW).
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(c.Theme.Border).
+		BorderForeground(t.Border).
 		Padding(0, 1)
-	if c.Theme.PaintBackground {
-		box = box.Background(c.Theme.Bg).BorderBackground(c.Theme.Bg)
+	if t.PaintBackground {
+		box = box.Background(t.Bg).BorderBackground(t.Bg)
 	}
-	rendered := box.Render(content)
-
-	rendered = InjectBorderTitleColor(rendered, c.Theme.Title.Render(m.title), c.Theme.Border, c.Theme)
-
-	canvas := lipgloss.NewStyle().Width(areaW).Height(areaH).Align(lipgloss.Center, lipgloss.Center)
-	if c.Theme.PaintBackground {
-		canvas = canvas.Background(c.Theme.Bg)
-	}
-	return canvas.Render(rendered)
+	title := t.On(t.HelpTitle).Render("<" + m.title + ">")
+	return InjectBorderTitleColor(box.Render(strings.Join(rows, "\n")), title, t.Border, t)
 }
 
+// renderModalField renders one "Label: value" row. The focused field's
+// value is drawn in the selection colors, the way k9s marks the form
+// item that has focus.
+func (c Chrome) renderModalField(f ModalField, focused bool, innerW int) string {
+	t := c.Theme
+	var val string
+	switch {
+	case f.checkbox && f.checked:
+		val = "[x]"
+	case f.checkbox:
+		val = "[ ]"
+	case len(f.Options) > 0:
+		val = f.Options[f.selected]
+	}
+	valStyle := t.On(t.Value)
+	if focused {
+		valStyle = lipgloss.NewStyle().Foreground(t.SelectionText).Background(t.Selection)
+	}
+	row := t.On(t.Value).Render(f.Label+": ") + valStyle.Render(val)
+	pad := lipgloss.NewStyle().Width(innerW)
+	if t.PaintBackground {
+		pad = pad.Background(t.Bg)
+	}
+	return pad.Render(row)
+}
+
+// renderModalButtons renders the one-row Cancel / OK pair, the focused
+// one filled in the border color like a k9s dialog button.
 func (c Chrome) renderModalButtons(m *Modal, innerW int) string {
-	// Two pill-style buttons: Cancel (muted) and OK (filled). The OK
-	// pill is highlighted because Enter triggers it — matches the k9s
-	// convention where the default action is visually emphasized.
-	cancel := lipgloss.NewStyle().
-		Padding(0, 2).
-		Foreground(c.Theme.Muted).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(c.Theme.Muted)
-	ok := lipgloss.NewStyle().
-		Padding(0, 2).
-		Foreground(c.Theme.PromptText).
-		Background(c.Theme.Border).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(c.Theme.Border).
-		Bold(true)
-	// Buttons are 3 rows tall (top border / content / bottom border).
-	// The gap between them must also be 3 rows of bg-painted cells —
-	// a Height(1) gap lets JoinHorizontal pad the missing rows with the
-	// terminal default, which shows through as a gray block between the
-	// two pills under PaintBackground.
-	gapStyle := lipgloss.NewStyle().Width(2).Height(3)
-	if c.Theme.PaintBackground {
-		cancel = cancel.Background(c.Theme.Bg).BorderBackground(c.Theme.Bg)
-		ok = ok.BorderBackground(c.Theme.Bg)
-		gapStyle = gapStyle.Background(c.Theme.Bg)
+	t := c.Theme
+	button := func(label string, focused bool) string {
+		if focused {
+			return lipgloss.NewStyle().Padding(0, 1).
+				Foreground(t.Value).Background(t.Border).Render(label)
+		}
+		return t.On(t.Muted).Padding(0, 1).Render(label)
 	}
-
-	row := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		cancel.Render(m.cancelLabel),
-		gapStyle.Render(""),
-		ok.Render(m.okLabel),
-	)
-
-	rowStyle := lipgloss.NewStyle().Width(innerW).Align(lipgloss.Center)
-	if c.Theme.PaintBackground {
-		rowStyle = rowStyle.Background(c.Theme.Bg)
+	row := button(m.cancelLabel, m.focus == m.cancelIndex()) +
+		t.On(t.Muted).Render("  ") +
+		button(m.okLabel, m.focus == m.okIndex())
+	s := lipgloss.NewStyle().Width(innerW).Align(lipgloss.Center)
+	if t.PaintBackground {
+		s = s.Background(t.Bg)
 	}
-	return rowStyle.Render(row)
+	return s.Render(row)
 }
