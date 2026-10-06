@@ -8,6 +8,19 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Fixed
+
+- `chrome.Modal`'s buttons are drawn as k9s draws them: the focused one
+  black on dodgerblue (it was white), the other in the dialog's cadetblue
+  (it was gray), with two cells either side of each label.
+
+### Added
+
+- `theme`: `DialogText`, `DialogButtonFocus`, `DialogButtonFocusText`,
+  `DialogLabel` and `DialogField`, set from a skin's `dialog:` block, with
+  k9s's defaults in `Default()`; read through `DialogTextColor()` and its
+  siblings, which fall back to the colors the dialog drew before.
+
 ## [0.0.24] - 2026-10-05
 
 ### Changed

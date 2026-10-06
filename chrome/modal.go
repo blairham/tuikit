@@ -276,7 +276,7 @@ func (c Chrome) renderModalBox(m *Modal, maxW int) string {
 
 	rows := []string{
 		blank,
-		line(lipgloss.NewStyle().Foreground(t.HelpDesc).Align(lipgloss.Center)).
+		line(lipgloss.NewStyle().Foreground(t.DialogTextColor()).Align(lipgloss.Center)).
 			Render(WrapText(m.prompt, innerW)),
 		blank,
 	}
@@ -320,11 +320,11 @@ func (c Chrome) renderModalField(f ModalField, focused bool, innerW int) string 
 	case len(f.Options) > 0:
 		val = f.Options[f.selected]
 	}
-	valStyle := t.On(t.Value)
+	valStyle := t.On(t.DialogFieldColor())
 	if focused {
-		valStyle = lipgloss.NewStyle().Foreground(t.SelectionText).Background(t.Selection)
+		valStyle = lipgloss.NewStyle().Foreground(t.SelectionTextColor()).Background(t.Selection)
 	}
-	row := t.On(t.Value).Render(f.Label+": ") + valStyle.Render(val)
+	row := t.On(t.DialogLabelColor()).Render(f.Label+": ") + valStyle.Render(val)
 	pad := lipgloss.NewStyle().Width(innerW)
 	if t.PaintBackground {
 		pad = pad.Background(t.Bg)
@@ -332,19 +332,20 @@ func (c Chrome) renderModalField(f ModalField, focused bool, innerW int) string 
 	return pad.Render(row)
 }
 
-// renderModalButtons renders the one-row Cancel / OK pair, the focused
-// one filled in the border color like a k9s dialog button.
+// renderModalButtons renders the one-row Cancel / OK pair as k9s draws
+// it: two cells either side of each label, the focused one black on
+// dodgerblue, the other in the dialog's text color.
 func (c Chrome) renderModalButtons(m *Modal, innerW int) string {
 	t := c.Theme
 	button := func(label string, focused bool) string {
 		if focused {
-			return lipgloss.NewStyle().Padding(0, 1).
-				Foreground(t.Value).Background(t.Border).Render(label)
+			return lipgloss.NewStyle().Padding(0, 2).
+				Foreground(t.DialogButtonFocusTextColor()).Background(t.DialogButtonFocusColor()).Render(label)
 		}
-		return t.On(t.Muted).Padding(0, 1).Render(label)
+		return t.On(t.DialogTextColor()).Padding(0, 2).Render(label)
 	}
 	row := button(m.cancelLabel, m.focus == m.cancelIndex()) +
-		t.On(t.Muted).Render("  ") +
+		t.On(t.DialogTextColor()).Render(" ") +
 		button(m.okLabel, m.focus == m.okIndex())
 	s := lipgloss.NewStyle().Width(innerW).Align(lipgloss.Center)
 	if t.PaintBackground {

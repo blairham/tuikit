@@ -84,6 +84,14 @@ type Theme struct {
 	XrayCursor     color.Color // the cursor row's background; nil uses Selection
 	XrayCursorText color.Color // the cursor row's text; nil uses the selection text color
 	XrayGraphic    color.Color // guides and ▸/▾ markers; nil uses Muted
+	// The confirm dialog's colors, k9s's dialog. Read them through
+	// [Theme.DialogTextColor] and its siblings; each falls back to the
+	// color the dialog drew before it had its own.
+	DialogText            color.Color // the message and unfocused buttons (k9s: cadetblue); nil uses HelpDesc
+	DialogButtonFocus     color.Color // the focused button's background (k9s: dodgerblue); nil uses Border
+	DialogButtonFocusText color.Color // the focused button's text (k9s: black); nil uses Bg
+	DialogLabel           color.Color // form row labels (k9s: white); nil uses Value
+	DialogField           color.Color // form row values (k9s: white); nil uses Value
 	// Breadcrumb pills, k9s's frame.crumbs: black on aqua for the trail,
 	// black on orange for the current view.
 	BreadcrumbBg     color.Color // pill bg for the trail (k9s: aqua)
@@ -191,6 +199,26 @@ func (t Theme) XrayTextColor() color.Color { return or(t.XrayText, t.TableTextCo
 // or [Theme.Selection] when unset.
 func (t Theme) XrayCursorColor() color.Color { return or(t.XrayCursor, t.Selection) }
 
+// DialogTextColor is the dialog's message and unfocused-button text:
+// [Theme.DialogText], or [Theme.HelpDesc] when unset.
+func (t Theme) DialogTextColor() color.Color { return or(t.DialogText, t.HelpDesc) }
+
+// DialogButtonFocusColor is the focused dialog button's background:
+// [Theme.DialogButtonFocus], or [Theme.Border] when unset.
+func (t Theme) DialogButtonFocusColor() color.Color { return or(t.DialogButtonFocus, t.Border) }
+
+// DialogButtonFocusTextColor is the focused dialog button's text:
+// [Theme.DialogButtonFocusText], or [Theme.Bg] when unset.
+func (t Theme) DialogButtonFocusTextColor() color.Color { return or(t.DialogButtonFocusText, t.Bg) }
+
+// DialogLabelColor is a dialog form row's label: [Theme.DialogLabel], or
+// [Theme.Value] when unset.
+func (t Theme) DialogLabelColor() color.Color { return or(t.DialogLabel, t.Value) }
+
+// DialogFieldColor is a dialog form row's value: [Theme.DialogField], or
+// [Theme.Value] when unset.
+func (t Theme) DialogFieldColor() color.Color { return or(t.DialogField, t.Value) }
+
 // XrayCursorTextColor is the tree cursor row's text:
 // [Theme.XrayCursorText], or [Theme.SelectionTextColor] when unset.
 func (t Theme) XrayCursorTextColor() color.Color {
@@ -249,6 +277,12 @@ func Default() Theme {
 		HelpSection:      lipgloss.Color("#008000"), // Green (k9s help SectionColor)
 		HelpDesc:         lipgloss.Color("#5F9EA0"), // CadetBlue (k9s help description text)
 		HelpBorder:       lipgloss.Color("#00FFFF"), // Cyan (k9s help overlay border)
+		// k9s's dialog defaults (config.newDialog).
+		DialogText:            lipgloss.Color("#5F9EA0"), // CadetBlue
+		DialogButtonFocus:     lipgloss.Color("#1E90FF"), // DodgerBlue
+		DialogButtonFocusText: lipgloss.Color("#000000"), // Black
+		DialogLabel:           lipgloss.Color("#FFFFFF"), // White
+		DialogField:           lipgloss.Color("#FFFFFF"), // White
 		Status: StatusColors{
 			OK:    lipgloss.Color("#008000"), // Green
 			Warn:  lipgloss.Color("#FFFF00"), // Yellow

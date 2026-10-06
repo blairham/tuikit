@@ -343,6 +343,13 @@ func (t Theme) WithSkin(s Skin) Theme {
 		{&t.XrayCursorText, s.Views.Xray.CursorTextColor},
 		{&t.XrayGraphic, s.Views.Xray.GraphicColor},
 		{&t.LogText, s.Views.Logs.FgColor},
+		// buttonFgColor / buttonBgColor are not mapped: k9s draws an
+		// unfocused button in the dialog's fgColor on its background.
+		{&t.DialogText, s.Dialog.FgColor},
+		{&t.DialogButtonFocus, s.Dialog.ButtonFocusBgColor},
+		{&t.DialogButtonFocusText, s.Dialog.ButtonFocusFgColor},
+		{&t.DialogLabel, s.Dialog.LabelFgColor},
+		{&t.DialogField, s.Dialog.FieldFgColor},
 	} {
 		set(e.dst, e.value)
 	}

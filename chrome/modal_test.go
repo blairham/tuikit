@@ -330,3 +330,31 @@ func keyRight() tea.KeyPressMsg { return tea.KeyPressMsg{Code: tea.KeyRight} }
 func keyShiftTab() tea.KeyPressMsg {
 	return tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}
 }
+
+// The buttons are k9s's: the focused one black on dodgerblue, the other
+// in the dialog's cadetblue — not white on blue and gray.
+func TestModal_ButtonColors(t *testing.T) {
+	t.Parallel()
+	c := New(Config{Theme: theme.Default()})
+	m := NewModal(theme.Default())
+	m.Open("Delete?", ModalOpts{})
+	out := c.renderModalButtons(m, 40)
+	for name, want := range map[string]string{
+		"focused Cancel": "\x1b[38;2;0;0;0;48;2;30;144;255mCancel",
+		"unfocused OK":   "\x1b[38;2;95;158;160;48;2;0;0;0mOK",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("%s: want %q in %q", name, want, out)
+		}
+	}
+
+	// A skin's dialog colors reach the buttons.
+	th := theme.Default()
+	th.DialogButtonFocus = lipgloss.Color("#FF00FF")
+	th.DialogText = lipgloss.Color("#00FF00")
+	c = New(Config{Theme: th})
+	out = c.renderModalButtons(m, 40)
+	if !strings.Contains(out, "48;2;255;0;255mCancel") || !strings.Contains(out, "38;2;0;255;0;48;2;0;0;0mOK") {
+		t.Errorf("theme dialog colors not used: %q", out)
+	}
+}

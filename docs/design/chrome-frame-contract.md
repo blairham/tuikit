@@ -209,6 +209,11 @@ The dispatch reads field values with `Modal.Value` / `Modal.Checked`
 before the modal closes. A non-empty error from the dispatch keeps the
 dialog open and is drawn inside it, in `Status.Error`.
 
-Colors follow k9s's default dialog skin through existing theme fields:
-`Border` for the frame and the focused button, `HelpTitle` for the
-`<Title>`, `HelpDesc` for the message, `Value` for labels.
+Colors are k9s's dialog skin, through the theme's `Dialog*` fields (a
+skin's `dialog:` block sets them): the message and the unfocused button
+in `DialogText` (cadetblue), the focused button `DialogButtonFocusText` on
+`DialogButtonFocus` (black on dodgerblue), form rows in `DialogLabel` /
+`DialogField` (white). `Border` draws the frame and `HelpTitle` the
+`<Title>`. A skin's `buttonFgColor` / `buttonBgColor` are not mapped: k9s
+itself draws an unfocused button in the dialog's text color, which is
+what the stock skin shows on screen.
