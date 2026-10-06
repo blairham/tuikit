@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.25] - 2026-10-06
+
 ### Fixed
 
 - `chrome.Modal`'s buttons are drawn as k9s draws them: the focused one
