@@ -125,6 +125,12 @@ k9s:
     suggestColor: "#6272a4"
     border: {command: "#ff79c6", default: "#ffffff"}
   help: {fgColor: "#f8f8f2", sectionColor: "#50fa7b"}
+  dialog:
+    fgColor: "#f8f8f1"
+    buttonFocusFgColor: "#282a35"
+    buttonFocusBgColor: "#bd93f8"
+    labelFgColor: "#ff79c5"
+    fieldFgColor: "#8be9fc"
   views:
     table:
       fgColor: "#f8f8f2"
@@ -179,6 +185,11 @@ func TestWithSkin(t *testing.T) {
 		"XrayCursor":              {got.XrayCursor, lipgloss.Color("#ff79c6")},
 		"XrayCursorText":          {got.XrayCursorText, lipgloss.Color("#282a36")},
 		"XrayGraphic":             {got.XrayGraphic, lipgloss.Color("#6272a4")},
+		"DialogText":              {got.DialogText, lipgloss.Color("#f8f8f1")},
+		"DialogButtonFocus":       {got.DialogButtonFocus, lipgloss.Color("#bd93f8")},
+		"DialogButtonFocusText":   {got.DialogButtonFocusText, lipgloss.Color("#282a35")},
+		"DialogLabel":             {got.DialogLabel, lipgloss.Color("#ff79c5")},
+		"DialogField":             {got.DialogField, lipgloss.Color("#8be9fc")},
 		"ChartPrimary":            {got.ChartPrimary, lipgloss.Color("#50fa7b")},
 		"ChartSecondary":          {got.ChartSecondary, lipgloss.Color("#ff5555")},
 		"ShortcutKey (rebuilt)":   {got.ShortcutKey.GetForeground(), lipgloss.Color("#ff79c6")},
