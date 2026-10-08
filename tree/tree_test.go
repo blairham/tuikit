@@ -299,7 +299,8 @@ func TestSetRootsKeepsState(t *testing.T) {
 	b := next[0].Children[0]
 	b.Children = append(
 		[]*Node{{ID: "c0", Label: "pod/web-a0", Children: []*Node{{ID: "c0x", Label: "x"}}}},
-		b.Children...)
+		b.Children...,
+	)
 	m.SetRoots(next)
 	if got := sel(m); got != "c" {
 		t.Errorf("selected %q after a refresh, want c", got)
