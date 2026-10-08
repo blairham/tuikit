@@ -209,7 +209,10 @@ formatters:
         - github.com/blairham/tuikit
 
     gofumpt:
-      extra-rules: true
+      extra:
+        group-params: true
+        clothe-returns: true
+        balance-calls: true
 
     gci:
       sections:
