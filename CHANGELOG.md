@@ -8,6 +8,14 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Changed
+
+- CI and releases run on the shared reusable workflows in
+  [blairham/.github](https://github.com/blairham/.github), and the lint, hook
+  and editor configuration is synced from its baseline. Release signatures
+  and provenance now carry the shared workflow's identity; SECURITY.md has
+  the new verify commands. Built with Go 1.26.9. (#114)
+
 ## [0.0.25] - 2026-10-06
 
 ### Fixed

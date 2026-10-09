@@ -6,7 +6,7 @@ allowed-tools: Bash(make:*), Bash(go test:*), Bash(go vet:*), Bash(go build:*), 
 
 Cut a tuikit release. A consumer picks up the new version via a
 `go get github.com/blairham/tuikit@$1` tag bump, so the release IS the git
-tag. Pushing it runs `.github/workflows/release.yml`, which publishes the
+tag. Pushing it runs `.github/workflows/release.yml` (blairham/.github's go-release.yml), which publishes the
 GitHub release (source archive, signed checksums, provenance) with the tag's
 CHANGELOG section as the notes — and fails if that section is missing. Target version: `$1` (must be `v0.0.x`, pre-stable).
 
