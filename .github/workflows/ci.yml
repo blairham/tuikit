@@ -3,9 +3,10 @@ name: CI
 # Everything that gates a merge. Pre-commit, Detect changed files, Build and
 # test and Fuzz are blairham/.github's go-ci.yml, shared with every Go
 # repository there; their checks report as `CI / <job>`. `Vet examples` is
-# tuikit's own: it `needs: ci` and gates its *steps* on
-# `needs.ci.outputs.code` (never a job-level `if:` or a `paths:` filter: a
-# required check that never runs is pending forever).
+# tuikit's own: it `needs: changes` (go-changes.yml, so it need not wait for
+# all of go-ci) and gates its *steps* on `needs.changes.outputs.code` (never a
+# job-level `if:` or a `paths:` filter: a required check that never runs is
+# pending forever).
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
@@ -31,7 +32,11 @@ concurrency:
 jobs:
   ci:
     name: CI
-    uses: blairham/.github/.github/workflows/go-ci.yml@99060d62d0693570a360127ab698307d276630da # v0.0.0
+    uses: blairham/.github/.github/workflows/go-ci.yml@9711060ad4860f35860bcbf90d90f103617082d2 # v0.0.1
+
+  changes:
+    name: Changes
+    uses: blairham/.github/.github/workflows/go-changes.yml@9711060ad4860f35860bcbf90d90f103617082d2 # v0.0.1
 
   examples:
     # The examples are documentation people copy, and a stale example is worse
@@ -39,16 +44,16 @@ jobs:
     # separate main package, so `go build ./...` in CI already covers them —
     # this runs them under `go vet` for the checks a build does not make.
     name: Vet examples
-    needs: ci
+    needs: changes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: needs.ci.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true'
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        if: needs.ci.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true'
         with:
           go-version-file: go.mod
           check-latest: true
           cache: true
       - run: go vet ./examples/...
-        if: needs.ci.outputs.code == 'true'
+        if: needs.changes.outputs.code == 'true'
