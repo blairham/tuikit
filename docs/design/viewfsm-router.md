@@ -78,3 +78,31 @@ arrow/page keys that `bubbles` tables understand natively. Apps that strip
 `j/k` from the table keymap (via `tuikit/table.KeyMap`) call this before
 feeding a key message into the active view's `table.Update`, so vim-style
 navigation works without the table double-handling the literal letters.
+
+## View interfaces
+
+The router never holds a view, but every tuikit app's views share a method
+set, so `viewfsm` names it. Apps implement these; the router does not
+consume them.
+
+| Interface | Methods | Satisfied today by |
+|---|---|---|
+| `View` | `Resize(width, height int)`, `View() string` | every k4a and cwlogs view, `tail.Model`, `tree.Model`, `chart.Sparkline`/`Gauge`/`Grid` |
+| `Filterable` | `SetFilter(expr string)` | every k4a and cwlogs view, `tail.Model`, `tree.Model` |
+| `List` | `View` + `Filterable` + `Count() int`, `Loading() bool`, `UpdateTable(tea.Msg) tea.Cmd` | every k4a view (through k4a's own `View`), cwlogs's three list views |
+
+They were read off the apps rather than designed ahead of them: k4a
+already had a `views.View` interface and cwlogs had three view types with
+the same methods and no interface. k5s and dossier draw from a single
+`App` and have no view types yet. A method goes into one of these only
+when at least two apps share it; k4a's `Init`, `Update`, `Refresh`,
+`HandleKey` and its `FormView` stay k4a's, as an interface that embeds
+`viewfsm.List`.
+
+An app keeps its views in a map keyed by its own `ViewID` and uses the
+router's `Active` to pick one:
+
+```go
+views := map[ViewID]viewfsm.View{ViewLogGroups: groups, ViewTail: tl}
+content := views[ViewID(r.Active())].View()
+```

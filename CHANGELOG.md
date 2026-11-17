@@ -8,6 +8,16 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+### Added
+
+- `viewfsm`: `View` (`Resize`, `View`), `Filterable` (`SetFilter`) and
+  `List` (both, plus `Count`, `Loading`, `UpdateTable`), the method sets
+  k4a's and cwlogs's views already share, so an app can keep its views in
+  one map and drive the active one without a type switch. The `Router`
+  still does not hold views. `tail.Model`, `tree.Model` and the chart
+  widgets satisfy `View` unchanged, and the package comment's `[View]`
+  link now resolves.
+
 ### Changed
 
 - CI and releases run on the shared reusable workflows in
