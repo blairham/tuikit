@@ -8,6 +8,8 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
 
 ## [Unreleased]
 
+## [0.0.26] - 2026-11-16
+
 ### Added
 
 - `viewfsm`: `View` (`Resize`, `View`), `Filterable` (`SetFilter`) and
@@ -24,7 +26,10 @@ Pre-stable releases (`v0.x.y`) make no API-stability promise — breaking change
   [blairham/.github](https://github.com/blairham/.github), and the lint, hook
   and editor configuration is synced from its baseline. Release signatures
   and provenance now carry the shared workflow's identity; SECURITY.md has
-  the new verify commands. Built with Go 1.26.9. (#114)
+  the new verify commands. (#114)
+- `go.mod` requires Go 1.27.4 (0.0.25 required 1.26.6): Go before 1.26.11
+  carries GO-2026-6859 in `net/http`, and 1.27.4 is the latest release.
+  A consumer on an older Go must move before taking this tag. (#129)
 
 ## [0.0.25] - 2026-10-06
 
